@@ -31,12 +31,14 @@ export function autoAdvance(matches: Match[], withdrawn: ReadonlySet<PlayerId>, 
       if (m.status !== 'open') return m;
       const a = resolveSlot(cur, m.a), b = resolveSlot(cur, m.b);
       if (a === null || b === null) return m;
-      const aOut = a === 'bye' || withdrawn.has(a), bOut = b === 'bye' || withdrawn.has(b);
-      if (!aOut && !bOut) return m;
+      // active player beats bye beats withdrawn player (the bye propagates so the next opponent advances)
+      const strength = (x: PlayerId | 'bye') => (x === 'bye' ? 1 : withdrawn.has(x) ? 0 : 2);
+      const sa = strength(a), sb = strength(b);
+      if (sa === 2 && sb === 2) return m;
       changed = true;
       const { board: _board, ...rest } = m;
       return { ...rest, status: 'done' as const, finishedAt: now,
-        result: { kind: 'walkover' as const, winner: aOut && !bOut ? 'b' as const : 'a' as const } };
+        result: { kind: 'walkover' as const, winner: sb > sa ? 'b' as const : 'a' as const } };
     });
     if (!changed) return cur;
     cur = next;

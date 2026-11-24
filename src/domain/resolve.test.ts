@@ -67,4 +67,16 @@ describe('autoAdvance', () => {
     expect(resolveSlot(out, { kind: 'winnerOf', matchId: 'x' })).toBe('bye');
     expect(resolveSlot(out, { kind: 'loserOf', matchId: 'x' })).toBe('bye');
   });
+
+  it('withdrawn player vs bye → the bye wins, so the next opponent advances', () => {
+    const m: Match = { id: 'x', bracket: 'main', round: 1, order: 0, label: '', a: p('A'), b: { kind: 'bye' },
+      legsToWin: 3, status: 'open', loserPlace: 5 };
+    const next: Match = { id: 'y', bracket: 'main', round: 2, order: 1, label: '', a: { kind: 'winnerOf', matchId: 'x' },
+      b: p('C'), legsToWin: 3, status: 'open' };
+    const out = autoAdvance([m, next], new Set(['A']), 1);
+    expect(out[0].result).toEqual({ kind: 'walkover', winner: 'b' });
+    expect(resolveSlot(out, { kind: 'loserOf', matchId: 'x' })).toBe('A');
+    expect(out[1].result).toEqual({ kind: 'walkover', winner: 'b' });
+    expect(resolveSlot(out, { kind: 'winnerOf', matchId: 'y' })).toBe('C');
+  });
 });
