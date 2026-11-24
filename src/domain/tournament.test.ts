@@ -235,3 +235,44 @@ describe('tournament lifecycle', () => {
     expect(canEditResult(t, 'ko-R2-1')).toBe(true);
   });
 });
+
+describe('withdrawals never dead-end the evening', () => {
+  const groups3: Mode = { kind: 'groupsKo', groups: 3, placementGames: true, thirdPlace: true };
+  const finish = (t: Tournament) => playAll(startKo(resolveTies(playAll(t))));
+  const eachActiveOnce = (t: Tournament) => {
+    const places = computePlacements(t);
+    expect(places.map((p) => p.playerId).sort()).toEqual(t.players.map((p) => p.id).sort());
+  };
+
+  it('9 players in 3 groups, one withdraws: falls back to a field of 8 and reaches done', () => {
+    let t = start(createTournament(settings(groups3), names(9), 1), tick());
+    t = withdrawPlayer(t, t.groups[0].playerIds[0], tick());
+    t = finish(t);
+    expect(koPlayers(t)).toHaveLength(8);
+    expect(t.phase).toBe('done');
+    eachActiveOnce(t);
+  });
+
+  it('fewer than 4 active players in 3 groups: startKo places them by group rank and ends', () => {
+    let t = playAll(start(createTournament(settings(groups3), names(9), 1), tick()));
+    for (const g of t.groups) for (const id of g.playerIds.slice(1)) t = withdrawPlayer(t, id, tick());
+    t = startKo(resolveTies(t));
+    expect(t.phase).toBe('done');
+    expect(t.matches.every((m) => m.bracket === 'group')).toBe(true);
+    const active = computePlacements(t).filter((p) => t.players.find((x) => x.id === p.playerId)!.withdrawnAt === undefined);
+    expect(active.map((p) => [p.place, p.placeTo])).toEqual([[1, 3], [1, 3], [1, 3]]);
+    eachActiveOnce(t);
+    expect(canEditResult(t, t.matches.find((m) => m.status === 'done')!.id)).toBe(false);
+  });
+
+  it('club 3 + 3, two withdraw in one league: semifinals of the best 4 and done', () => {
+    let t = start(createTournament(settings(club), names(6), 7), tick());
+    t = withdrawPlayer(t, t.groups[0].playerIds[0], tick());
+    t = withdrawPlayer(t, t.groups[0].playerIds[1], tick());
+    t = finish(t);
+    expect(t.matches.some((m) => m.label === 'Halbfinale 1')).toBe(true);
+    expect(t.phase).toBe('done');
+    eachActiveOnce(t);
+    expect(computePlacements(t).map((p) => p.place)).toEqual([1, 2, 3, 4, 5, 5]);
+  });
+});

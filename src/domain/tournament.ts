@@ -18,7 +18,8 @@ const withdrawnSet = (t: Tournament) => new Set(t.players.filter((p) => p.withdr
 const getMatch = (t: Tournament, id: string) => t.matches.find((m) => m.id === id) ?? fail('Spiel nicht gefunden.');
 const put = (ms: Match[], m: Match) => ms.map((x) => (x.id === m.id ? m : x));
 const ids = (m: Match) => [m.a, m.b].flatMap((s) => (s.kind === 'player' ? [s.id] : []));
-const koStarted = (t: Tournament) => t.matches.some((m) => m.bracket !== 'group');
+// fixedPlaces are only written by startKo (also when it ends the evening without K.O. matches)
+const koStarted = (t: Tournament) => t.fixedPlaces.length > 0 || t.matches.some((m) => m.bracket !== 'group');
 const groupsFinished = (t: Tournament) => t.matches.length > 0
   && t.matches.every((m) => m.bracket !== 'group' || m.status === 'done' || m.status === 'void');
 const free = ({ board: _b, ...m }: Match): Match => m;
@@ -215,8 +216,11 @@ function koField(t: Tournament): 4 | 8 | 16 | undefined {
   const { mode } = t.settings;
   if (mode.kind !== 'groupsKo') return undefined;
   const w = withdrawnSet(t);
-  const options = koFieldOptions(t.groups.map((g) => g.playerIds.filter((id) => !w.has(id)).length));
-  return options.find((f) => !mode.koFieldSize || f <= mode.koFieldSize);
+  const sizes = t.groups.map((g) => g.playerIds.filter((id) => !w.has(id)).length);
+  const fits = (f: number) => !mode.koFieldSize || f <= mode.koFieldSize;
+  // withdrawals can break the per-group cap; then the largest field the active players fill
+  const active = sizes.reduce((a, b) => a + b, 0);
+  return koFieldOptions(sizes).find(fits) ?? ([16, 8, 4] as const).find((f) => fits(f) && f <= active);
 }
 
 function qualifyMulti(t: Tournament, field: 4 | 8 | 16) {
@@ -278,14 +282,20 @@ export function startKo(t: Tournament): Tournament {
     ({ matches: ko, fixedPlaces } = buildClubKo(ranked(t.groups[0]), ranked(t.groups[1]),
       { legsKo: legs.ko, legsFinal: legs.final, placementGames: mode.placementGames, thirdPlace: mode.thirdPlace }));
   } else {
-    const field = koField(t) ?? fail('Mit diesen Gruppengrößen ist kein K.O.-Feld (4, 8 oder 16) möglich.');
-    const q = qualifyMulti(t, field);
-    ko = buildSingleElim(seedEntries(q.seeds, field), { idPrefix: 'ko', legsKo: legs.ko, legsFinal: legs.final,
-      thirdPlace: mode.thirdPlace, placementGames: mode.placementGames, firstPlace: 1 });
-    fixedPlaces = nonQualifierPlaces(q.eliminated, field);
+    const field = koField(t);
+    if (field) {
+      const q = qualifyMulti(t, field);
+      ko = buildSingleElim(seedEntries(q.seeds, field), { idPrefix: 'ko', legsKo: legs.ko, legsFinal: legs.final,
+        thirdPlace: mode.thirdPlace, placementGames: mode.placementGames, firstPlace: 1 });
+      fixedPlaces = nonQualifierPlaces(q.eliminated, field);
+    } else {
+      // fewer than 4 active players: no K.O., places by group rank end the evening
+      ko = [];
+      fixedPlaces = nonQualifierPlaces(t.groups.flatMap((g) => ranked(g).map((playerId, i) => ({ playerId, groupRank: i + 1 }))), 0);
+    }
   }
   fixedPlaces = [...fixedPlaces, ...withdrawnPlaces(t)];
-  return { ...t, matches: [...t.matches, ...ko], fixedPlaces, phase: 'ko' };
+  return settle({ ...t, matches: [...t.matches, ...ko], fixedPlaces });
 }
 
 export function computePlacements(t: Tournament): PlaceEntry[] {

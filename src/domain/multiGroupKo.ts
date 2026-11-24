@@ -26,8 +26,11 @@ export function qualify(groups: { id: string; rows: StandingRow[] }[], field: 4 
   const pot = (r: number) => all.filter((c) => c.groupRank === r).sort(cmp);
   const seeds: Cand[] = [];
   for (let r = 1; r <= k; r++) seeds.push(...pot(r));
+  // fill from rank k + 1, then further down if a rank runs out (withdrawals)
+  let r = k + 1;
+  for (; pot(r).length && pot(r).length <= field - seeds.length; r++) seeds.push(...pot(r));
   const need = field - seeds.length;
-  let candidates = pot(k + 1);
+  let candidates = pot(r);
   let fillerTieKey: string | undefined;
   if (need > 0 && need < candidates.length && cmp(candidates[need - 1], candidates[need]) === 0) {
     const tied = candidates.filter((c) => cmp(c, candidates[need]) === 0);
@@ -103,7 +106,7 @@ export function seedEntries(seeds: Seed[], field: 4 | 8 | 16): Slot[] {
   return pos.map((s) => ({ kind: 'player', id: seeds[s].playerId }));
 }
 
-export function nonQualifierPlaces(eliminated: { playerId: PlayerId; groupRank: number }[], field: 4 | 8 | 16): PlaceEntry[] {
+export function nonQualifierPlaces(eliminated: { playerId: PlayerId; groupRank: number }[], field: number): PlaceEntry[] {
   const out: PlaceEntry[] = [];
   let place = field + 1;
   for (const r of [...new Set(eliminated.map((e) => e.groupRank))].sort((a, b) => a - b)) {

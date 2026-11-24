@@ -103,8 +103,20 @@ describe('buildClubKo', () => {
     ]);
   });
 
-  it('throws when a league has fewer than 2 players', () => {
-    expect(() => buildClubKo(['A1'], league('B', 3), opts)).toThrow('Liga A hat zu wenige Spieler für die K.O.-Runde');
-    expect(() => buildClubKo(league('A', 3), ['B1'], opts)).toThrow('Liga B hat zu wenige Spieler für die K.O.-Runde');
+  it('a thin league: best 4 by league rank play semifinals 1–4 and 2–3, the rest take single places', () => {
+    const { matches, fixedPlaces } = buildClubKo(['A1'], league('B', 5), opts);
+    expect(pair(matches, 'Halbfinale 1')).toEqual(['A1', 'B3']);
+    expect(pair(matches, 'Halbfinale 2')).toEqual(['B1', 'B2']);
+    expect(fixedPlaces).toEqual([{ playerId: 'B4', place: 5 }, { playerId: 'B5', place: 6 }]);
+    const ps = places(matches, fixedPlaces);
+    expect(ps.map((p) => p.place).sort((x, y) => x - y)).toEqual([1, 2, 3, 4, 5, 6]);
+  });
+
+  it('fewer than 4 players: final of the top 2, or just a place', () => {
+    const three = buildClubKo(['A1'], ['B1', 'B2'], opts);
+    expect(three.matches.map((m) => m.label)).toEqual(['Finale']);
+    expect(pair(three.matches, 'Finale')).toEqual(['A1', 'B1']);
+    expect(three.fixedPlaces).toEqual([{ playerId: 'B2', place: 3 }]);
+    expect(buildClubKo([], ['B1'], opts)).toEqual({ matches: [], fixedPlaces: [{ playerId: 'B1', place: 1 }] });
   });
 });
