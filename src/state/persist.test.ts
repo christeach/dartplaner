@@ -25,25 +25,26 @@ describe('persist', () => {
   it('roundtrips a running tournament', () => {
     const s = fake(); const t = midGroup();
     expect(saveTournament(t, s)).toBe(true);
-    expect(loadTournament(s)).toEqual(t);
-    expect(loadTournament(s)!.matches[0].board).toBe(2);
+    expect(loadTournament(s)).toEqual({ t, failed: false });
+    expect(loadTournament(s).t!.matches[0].board).toBe(2);
   });
-  it('returns null for missing, corrupt or wrong-version data', () => {
+  it('tells nothing stored apart from stored but unreadable, and keeps the unreadable data', () => {
     const s = fake();
-    expect(loadTournament(s)).toBeNull();
+    expect(loadTournament(s)).toEqual({ t: null, failed: false });
     s.setItem(STORAGE_KEY, '{nope');
-    expect(loadTournament(s)).toBeNull();
+    expect(loadTournament(s)).toEqual({ t: null, failed: true });
     s.setItem(STORAGE_KEY, JSON.stringify({ ...midGroup(), version: 2 }));
-    expect(loadTournament(s)).toBeNull();
+    expect(loadTournament(s)).toEqual({ t: null, failed: true });
+    expect(s.getItem(STORAGE_KEY)).not.toBeNull();
   });
   it('survives throwing storage', () => {
     const boom = () => { throw new Error('x'); };
     expect(saveTournament(midGroup(), fake({ setItem: boom }))).toBe(false);
-    expect(loadTournament(fake({ getItem: boom }))).toBeNull();
+    expect(loadTournament(fake({ getItem: boom }))).toEqual({ t: null, failed: false });
   });
   it('clear removes the key', () => {
     const s = fake(); saveTournament(midGroup(), s); clearTournament(s);
-    expect(loadTournament(s)).toBeNull();
+    expect(loadTournament(s).t).toBeNull();
   });
 });
 
@@ -52,7 +53,7 @@ describe('persist without storage argument', () => {
     const had = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
     Object.defineProperty(globalThis, 'localStorage', { configurable: true, get() { throw new Error('SecurityError'); } });
     try {
-      expect(loadTournament()).toBeNull();
+      expect(loadTournament().t).toBeNull();
       expect(saveTournament(midGroup())).toBe(false);
       expect(() => clearTournament()).not.toThrow();
     } finally {
@@ -64,15 +65,29 @@ describe('persist without storage argument', () => {
 describe('tournamentReducer', () => {
   it('keeps old state and sets the German error when an action throws', () => {
     const t = midGroup();
-    const r = tournamentReducer({ t, lastError: null }, { type: 'startMatch', matchId: 'nope', board: 1 });
+    const r = tournamentReducer({ t, lastError: null, loadFailed: false }, { type: 'startMatch', matchId: 'nope', board: 1 });
     expect(r.t).toBe(t);
     expect(r.lastError).toBe('Spiel nicht gefunden.');
   });
   it('clears lastError on success and resets to null', () => {
     const t = midGroup();
-    const ok = tournamentReducer({ t, lastError: 'alt' }, { type: 'cancelMatch', matchId: t.matches[0].id });
+    const ok = tournamentReducer({ t, lastError: 'alt', loadFailed: false }, { type: 'cancelMatch', matchId: t.matches[0].id });
     expect(ok.lastError).toBeNull();
     expect(ok.t!.matches[0].status).not.toBe('running');
-    expect(tournamentReducer(ok, { type: 'reset' })).toEqual({ t: null, lastError: null });
+    expect(tournamentReducer(ok, { type: 'reset' })).toEqual({ t: null, lastError: null, loadFailed: false });
+  });
+  it('load replaces the tournament with the one from another tab', () => {
+    const t = midGroup(), other = start(createTournament(settings, ['X', 'Y', 'Z', 'W'], 9), 1);
+    expect(tournamentReducer({ t, lastError: 'alt', loadFailed: false }, { type: 'load', t: other }))
+      .toEqual({ t: other, lastError: null, loadFailed: false });
+    expect(tournamentReducer({ t, lastError: null, loadFailed: false }, { type: 'load', t: null }).t).toBeNull();
+  });
+  it('a failed load stays flagged until a tournament is created or the user resets', () => {
+    const failed = { t: null, lastError: null, loadFailed: true };
+    expect(tournamentReducer(failed, { type: 'redraw' }).loadFailed).toBe(true);
+    expect(tournamentReducer(failed, { type: 'reset' }).loadFailed).toBe(false);
+    const created = tournamentReducer(failed, { type: 'create', settings, names: ['A', 'B', 'C', 'D'] });
+    expect(created.t).not.toBeNull();
+    expect(created.loadFailed).toBe(false);
   });
 });

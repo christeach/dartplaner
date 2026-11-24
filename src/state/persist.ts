@@ -2,14 +2,20 @@ import type { Tournament } from '../domain/types';
 
 export const STORAGE_KEY = 'dartplaner.v1';
 
-export function loadTournament(storage?: Storage): Tournament | null {
+// failed: something is stored but cannot be read (corrupt or another version) – keep it, do not overwrite silently
+export function loadTournament(storage?: Storage): { t: Tournament | null; failed: boolean } {
+  let raw: string | null;
   try {
-    const raw = (storage ?? localStorage).getItem(STORAGE_KEY);
-    if (raw === null) return null;
-    const t = JSON.parse(raw) as Tournament | null;
-    return t && t.version === 1 ? t : null;
+    raw = (storage ?? localStorage).getItem(STORAGE_KEY);
   } catch {
-    return null;
+    return { t: null, failed: false };
+  }
+  if (raw === null) return { t: null, failed: false };
+  try {
+    const t = JSON.parse(raw) as Tournament | null;
+    return t && t.version === 1 ? { t, failed: false } : { t: null, failed: true };
+  } catch {
+    return { t: null, failed: true };
   }
 }
 
