@@ -90,6 +90,23 @@ describe('seedEntries', () => {
   }
 });
 
+describe('seedEntries spreads group mates over the field of 16', () => {
+  for (const [g, n] of [[4, 8], [5, 7], [6, 6], [8, 4]]) {
+    it(`${g} groups of ${n}: per quarter ≤ ceil(q/4), per half ≤ ceil(q/2)`, () => {
+      for (let s = 1; s <= 150; s++) {
+        const { seeds } = qualify(randomGroups(g, n, createRng(s)), 16);
+        const ids = seedEntries(seeds, 16).map((e) => (e.kind === 'player' ? e.id : ''));
+        for (const grp of new Set(seeds.map((x) => x.groupId))) {
+          const at = seeds.filter((x) => x.groupId === grp).map((x) => ids.indexOf(x.playerId));
+          const most = (size: number) => Math.max(...[0, 1, 2, 3].map((b) => at.filter((i) => Math.floor(i / size) === b).length));
+          expect(most(4)).toBeLessThanOrEqual(Math.ceil(at.length / 4));
+          expect(most(8)).toBeLessThanOrEqual(Math.ceil(at.length / 2));
+        }
+      }
+    });
+  }
+});
+
 describe('nonQualifierPlaces', () => {
   it('shares places by group rank', () => {
     const { eliminated } = qualify(randomGroups(4, 5, createRng(7)), 8);
