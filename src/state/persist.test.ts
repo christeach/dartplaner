@@ -47,6 +47,20 @@ describe('persist', () => {
   });
 });
 
+describe('persist without storage argument', () => {
+  it('does not throw when localStorage access throws', () => {
+    const had = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+    Object.defineProperty(globalThis, 'localStorage', { configurable: true, get() { throw new Error('SecurityError'); } });
+    try {
+      expect(loadTournament()).toBeNull();
+      expect(saveTournament(midGroup())).toBe(false);
+      expect(() => clearTournament()).not.toThrow();
+    } finally {
+      if (had) Object.defineProperty(globalThis, 'localStorage', had); else delete (globalThis as { localStorage?: unknown }).localStorage;
+    }
+  });
+});
+
 describe('tournamentReducer', () => {
   it('keeps old state and sets the German error when an action throws', () => {
     const t = midGroup();
