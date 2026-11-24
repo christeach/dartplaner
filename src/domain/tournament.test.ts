@@ -121,13 +121,6 @@ describe('tournament lifecycle', () => {
     expect(startMatch(t, free.id, 2, tick()).matches.find((x) => x.id === free.id)!.status).toBe('running');
   });
 
-  it('single K.O. with 5 players and third place reaches done with places 1, 2, 3, 4, 5–8', () => {
-    const t = playAll(start(createTournament(settings({ kind: 'singleKo', thirdPlace: true }), names(5), 7), tick()));
-    expect(t.phase).toBe('done');
-    expect(computePlacements(t).map((p) => [p.place, p.placeTo])).toEqual(
-      [[1, undefined], [2, undefined], [3, undefined], [4, undefined], [5, 8]]);
-  });
-
   it('round robin with a perfect three-way tie for 1st goes to tiebreak, then done', () => {
     let t = start(createTournament(settings({ kind: 'roundRobin', finalTopTwo: false }), names(4), 7), tick());
     const beats = (x: string, y: string) => y === 'p4' || (x === 'p1' && y === 'p2') || (x === 'p2' && y === 'p3') || (x === 'p3' && y === 'p1');
@@ -274,5 +267,23 @@ describe('withdrawals never dead-end the evening', () => {
     expect(t.phase).toBe('done');
     eachActiveOnce(t);
     expect(computePlacements(t).map((p) => p.place)).toEqual([1, 2, 3, 4, 5, 5]);
+  });
+});
+
+describe('final placements close the gaps left by byes', () => {
+  const label = (t: Tournament) => computePlacements(t).map((p) => (p.placeTo ? `${p.place}–${p.placeTo}` : `${p.place}`));
+  it('single K.O. with 5 players: places 1..5', () => {
+    const t = playAll(start(createTournament(settings({ kind: 'singleKo', thirdPlace: true }), names(5), 7), tick()));
+    expect(t.phase).toBe('done');
+    expect(label(t)).toEqual(['1', '2', '3', '4', '5']);
+  });
+  it('single K.O. with 6 players: two share 5–6', () => {
+    const t = playAll(start(createTournament(settings({ kind: 'singleKo', thirdPlace: true }), names(6), 7), tick()));
+    expect(label(t)).toEqual(['1', '2', '3', '4', '5–6', '5–6']);
+  });
+  it('double K.O. with 5 players: places 1..5', () => {
+    const t = playAll(start(createTournament(settings({ kind: 'doubleKo' }), names(5), 7), tick()));
+    expect(t.phase).toBe('done');
+    expect(label(t)).toEqual(['1', '2', '3', '4', '5']);
   });
 });

@@ -316,5 +316,12 @@ export function computePlacements(t: Tournament): PlaceEntry[] {
       }
     }
   }
-  return out.sort((x, y) => x.place - y.place);
+  out.sort((x, y) => x.place - y.place);
+  // byes leave ranges partly empty (5–8 for one player): once all is decided, close the gaps
+  if (t.phase !== 'done') return out;
+  return out.map(({ playerId, place: old }) => {
+    const place = 1 + out.filter((x) => x.place < old).length;
+    const tied = out.filter((x) => x.place === old).length;
+    return { playerId, place, ...(tied > 1 ? { placeTo: place + tied - 1 } : {}) };
+  });
 }
