@@ -13,9 +13,9 @@ export function Modal({ title, onClose, children }: Props) {
     if (!d.open) d.showModal();
     return () => {
       d.close();
-      // the opener may be gone (e.g. the board tile changed); then fall back to the page heading
+      // the opener may be gone (board tile changed, or the whole screen after "Neues Turnier"): use the page heading
       const o = opener.current;
-      (o?.isConnected ? o : document.getElementById('shell-title'))?.focus();
+      (o?.isConnected ? o : document.querySelector<HTMLElement>('main h1'))?.focus();
     };
   }, []);
   return (

@@ -167,7 +167,7 @@ p { margin: 0; }
 /* tournament shell */
 .shell-header { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--sp-4); flex-wrap: wrap; margin-bottom: var(--sp-4); }
 .shell-header .sub { color: var(--c-text-muted); font-size: var(--fs-lg); }
-#shell-title:focus { outline: none; }
+h1[tabindex="-1"]:focus { outline: none; }
 .banner-msg { margin-bottom: var(--sp-4); }
 .alert-row { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-4); flex-wrap: wrap; padding-left: var(--sp-4); }
 .tabs { display: flex; gap: var(--sp-1); flex-wrap: wrap; margin-bottom: var(--sp-5); padding: var(--sp-1);

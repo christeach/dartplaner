@@ -52,7 +52,7 @@ export function SetupScreen({ t, dispatch, lastError }: Props) {
   return (
     <main className="page">
       <header className="page-header">
-        <h1>Dartplaner</h1>
+        <h1 tabIndex={-1}>Dartplaner</h1>
         <p className="sub">Neues Turnier anlegen</p>
       </header>
 

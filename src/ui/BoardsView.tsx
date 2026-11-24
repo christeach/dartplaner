@@ -18,6 +18,7 @@ export function BoardsView({ t, dispatch, onEdit }: Props) {
   const suggestions = boardSuggestions(t);
   const q = queue(t);
   const ties = t.phase === 'tiebreak' ? pendingTies(t) : [];
+  const koReady = canStartKo(t);
   const vs = (m: Match) => <><b>{playerName(t, m, 'a')}</b> <span className="vs">vs</span> <b>{playerName(t, m, 'b')}</b></>;
   const recent = t.matches.filter((m) => m.status === 'done' && m.result?.kind === 'legs')
     .sort((x, y) => (y.finishedAt ?? 0) - (x.finishedAt ?? 0)).slice(0, RECENT);
@@ -34,7 +35,7 @@ export function BoardsView({ t, dispatch, onEdit }: Props) {
         </section>
       )}
 
-      {canStartKo(t) && (
+      {koReady && (
         <section className="banner banner-live" aria-labelledby="ko-h">
           <h2 id="ko-h">Gruppenphase beendet</h2>
           <p>Alle Gruppenspiele sind gespielt. Die Abschlusstabellen stehen unter „Tabellen“.</p>
@@ -77,7 +78,7 @@ export function BoardsView({ t, dispatch, onEdit }: Props) {
                     <button type="button" className="btn btn-primary" onClick={() => start(next.id, board)}>Spiel starten</button>
                     <button type="button" className="btn" onClick={() => setPicking(board)}>Anderes Spiel</button>
                   </div>
-                </> : <p className="hint">Gerade kein Spiel möglich.</p>}
+                </> : <p className="hint">{koReady ? 'Gruppenphase beendet – K.O.-Runde starten' : 'Gerade kein Spiel möglich.'}</p>}
               </li>
             );
           })}

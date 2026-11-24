@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { PlayerId, Tournament } from '../domain/types';
 import type { Action } from '../state/useTournament';
 import { BoardsView } from './BoardsView';
@@ -14,6 +14,8 @@ export function TournamentShell({ t, dispatch, persistOk, lastError }: Props) {
   const [editing, setEditing] = useState<string | null>(null);
   const [dialog, setDialog] = useState<'withdraw' | 'reset' | null>(null);
   const [dismissed, setDismissed] = useState<string | null>(null);
+  // a success clears lastError; forget the dismissal so the same error shows again next time
+  useEffect(() => { if (!lastError) setDismissed(null); }, [lastError]);
 
   const { mode } = t.settings;
   const tabs: { id: Tab; label: string }[] = [
@@ -29,7 +31,7 @@ export function TournamentShell({ t, dispatch, persistOk, lastError }: Props) {
     <main className="page">
       <header className="shell-header">
         <div>
-          <h1 id="shell-title" tabIndex={-1}>{t.settings.name}</h1>
+          <h1 tabIndex={-1}>{t.settings.name}</h1>
           <p className="sub">{d}.{mo}.{y}</p>
         </div>
         <div className="row" role="group" aria-label="Turnier">

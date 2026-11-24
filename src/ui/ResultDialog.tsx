@@ -39,10 +39,10 @@ export function ResultDialog({ match: m, t, mode, onSave, onClose }: Props) {
 
   const save = () => {
     if (!canSave) return;
-    // untouched stats go back unchanged; edited ones always as an object (an empty object clears them)
-    const stats: Stats = touched
-      ? { ...(parsed.a ? { a: parsed.a } : {}), ...(parsed.b ? { b: parsed.b } : {}) }
-      : m.stats;
+    // untouched stats go back unchanged; edited ones as an object (in edit mode an empty object clears them)
+    const stats: Stats = !touched ? m.stats
+      : !parsed.a && !parsed.b && mode === 'new' ? undefined
+      : { ...(parsed.a ? { a: parsed.a } : {}), ...(parsed.b ? { b: parsed.b } : {}) };
     onSave({ kind: 'legs', a: legs.a!, b: legs.b! }, stats);
   };
 
