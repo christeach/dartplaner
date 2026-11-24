@@ -13,9 +13,9 @@ const MODES: { choice: ModeChoice; label: string }[] = [
   { choice: 'doubleKo', label: 'Doppel-K.O.' },
 ];
 
-interface Props { t: Tournament | null; dispatch: (a: Action) => void; lastError: string | null }
+interface Props { t: Tournament | null; dispatch: (a: Action) => void; lastError: string | null; loadFailed?: boolean }
 
-export function SetupScreen({ t, dispatch, lastError }: Props) {
+export function SetupScreen({ t, dispatch, lastError, loadFailed }: Props) {
   const id = useId();
   const s = t?.settings;
   const [name, setName] = useState(s?.name ?? 'Vereinsturnier');
@@ -55,6 +55,8 @@ export function SetupScreen({ t, dispatch, lastError }: Props) {
         <h1 tabIndex={-1}>Dartplaner</h1>
         <p className="sub">Neues Turnier anlegen</p>
       </header>
+
+      {loadFailed && <p className="errors banner-msg" role="alert">Gespeichertes Turnier konnte nicht gelesen werden.</p>}
 
       <div className="stack">
         <section className="card" aria-labelledby={`${id}-h1`}>

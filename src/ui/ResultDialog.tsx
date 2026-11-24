@@ -48,7 +48,7 @@ export function ResultDialog({ match: m, t, mode, locked = false, onSave, onClos
   return (
     <Modal title={title} onClose={onClose}>
       <p className="hint">{m.label}{mode === 'edit' ? ` · First to ${n}` : ''}</p>
-      {locked && <p>Das Ergebnis ist festgeschrieben – nur die Highlights können noch geändert werden.</p>}
+      {locked && <p>Das Ergebnis ist festgeschrieben – nur die Statistik kann noch geändert werden.</p>}
       <div className="stack" style={{ gap: 'var(--sp-4)' }}>
         {(['a', 'b'] as const).map((side) => (
           <div key={side} className="score-row" role="group" aria-labelledby={`${id}-${side}`}>

@@ -33,6 +33,7 @@ export function BoardsView({ t, dispatch, onEdit }: Props) {
           <h2 id="ties-h">Stechen nötig</h2>
           <p>Diese Spieler sind nach allen Kriterien gleich. Spielt die Reihenfolge aus (z. B. Bull-Off) und tippt die Spieler in der Reihenfolge an, beginnend mit dem Besten.</p>
           {ties.map((tie) => <TieOrder key={tie.key} t={t} tie={tie} dispatch={dispatch} />)}
+          <DecidedTies t={t} dispatch={dispatch} />
         </section>
       )}
 
@@ -40,6 +41,7 @@ export function BoardsView({ t, dispatch, onEdit }: Props) {
         <section className="banner banner-live" aria-labelledby="ko-h">
           <h2 id="ko-h">Gruppenphase beendet</h2>
           <p>Alle Gruppenspiele sind gespielt. Die Abschlusstabellen stehen unter „Tabellen“.</p>
+          <DecidedTies t={t} dispatch={dispatch} />
           <div className="row">
             <button type="button" className="btn btn-primary btn-lg" onClick={() => dispatch({ type: 'startKo' })}>
               K.O.-Runde starten
@@ -176,4 +178,14 @@ function TieOrder({ t, tie, dispatch }: { t: Tournament; tie: PendingTie; dispat
       </div>
     </div>
   );
+}
+
+function DecidedTies({ t, dispatch }: { t: Tournament; dispatch: (a: Action) => void }) {
+  const name = (id: PlayerId) => t.players.find((p) => p.id === id)?.name ?? id;
+  return Object.entries(t.tieOrder).map(([key, order]) => (
+    <div key={key} className="row">
+      <span>Stechen entschieden: {order.map(name).join(', ')}</span>
+      <button type="button" className="btn" onClick={() => dispatch({ type: 'clearTieOrder', key })}>Stechen zurücksetzen</button>
+    </div>
+  ));
 }

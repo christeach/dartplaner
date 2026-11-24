@@ -24,7 +24,7 @@ export function buildWorkbook(t: Tournament): XLSX.WorkBook {
   for (const g of t.groups) {
     tabellen.push([g.name], ['Platz', 'Name', 'Spiele', 'Siege', 'Niederlagen', 'Legs', 'Leg-Differenz', 'Punkte']);
     for (const r of groupStandings(t, g)) {
-      tabellen.push([r.rank, name(r.playerId), r.played, r.won, r.lost, `${r.legsFor}:${r.legsAgainst}`, r.legDiff, r.points]);
+      tabellen.push([r.rank, r.withdrawn ? `${name(r.playerId)} (abgemeldet)` : name(r.playerId), r.played, r.won, r.lost, `${r.legsFor}:${r.legsAgainst}`, r.legDiff, r.points]);
     }
     tabellen.push([]);
   }

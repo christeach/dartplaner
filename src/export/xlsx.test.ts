@@ -53,4 +53,12 @@ describe('xlsx export', () => {
     expect(plat[0]).toEqual(['Platz', 'Name']);
     expect(plat.slice(1).filter((r) => r[0] === '5–8')).toHaveLength(4);
   });
+
+  it('marks withdrawn players in the Tabellen sheet', () => {
+    let t = start(createTournament(settings, ['Anna', 'Ben', 'Cem'], 1), 1);
+    t = withdrawPlayer(t, t.players.find((p) => p.name === 'Ben')!.id, 2);
+    const names = rows(buildWorkbook(t), 'Tabellen').slice(2).map((r) => r[1]);
+    expect(names).toContain('Ben (abgemeldet)');
+    expect(names).toContain('Anna');
+  });
 });
