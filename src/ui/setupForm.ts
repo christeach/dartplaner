@@ -1,4 +1,4 @@
-import type { Mode } from '../domain/types';
+import type { Mode, Settings } from '../domain/types';
 
 export type ModeChoice = 'club' | 'groups' | 'roundRobin' | 'singleKo' | 'doubleKo';
 export interface ModeForm {
@@ -7,7 +7,7 @@ export interface ModeForm {
 }
 
 export const defaultModeForm: ModeForm = {
-  choice: 'club', groups: 3, placementGames: true, thirdPlace: false, finalTopTwo: false, koFieldSize: 0 };
+  choice: 'club', groups: 3, placementGames: true, thirdPlace: true, finalTopTwo: false, koFieldSize: 0 };
 
 export function buildMode(f: ModeForm): Mode {
   switch (f.choice) {
@@ -37,3 +37,19 @@ export const groupSizes = (players: number, groups: number) =>
 
 export const todayIso = (d = new Date()) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+type Legs = Settings['legs'];
+export const defaultLegs: Legs = { group: 3, ko: 3, final: 4 };
+
+export const shownLegs = (f: ModeForm) => ({
+  group: f.choice !== 'singleKo' && f.choice !== 'doubleKo',
+  ko: f.choice !== 'roundRobin',
+  final: f.choice !== 'roundRobin' || f.finalTopTwo,
+});
+
+// legs fields the mode does not show use their defaults, so an invisible field never blocks the setup
+export function usedLegs(f: ModeForm, legs: Legs): Legs {
+  const shown = shownLegs(f);
+  return { group: shown.group ? legs.group : defaultLegs.group, ko: shown.ko ? legs.ko : defaultLegs.ko,
+    final: shown.final ? legs.final : defaultLegs.final };
+}

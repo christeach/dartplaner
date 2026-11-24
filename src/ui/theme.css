@@ -144,7 +144,7 @@ p { margin: 0; }
 /* messages */
 .errors {
   margin: 0; padding: var(--sp-3) var(--sp-4) var(--sp-3) var(--sp-6); border-radius: var(--r-md);
-  background: var(--c-danger-soft); color: var(--c-text); border-left: 4px solid var(--c-danger);
+  background: var(--c-danger-soft); color: var(--c-text); border: 1px solid var(--c-danger);
 }
 .count { font-weight: 700; }
 

@@ -3,7 +3,7 @@ import { koFieldOptions } from '../domain/multiGroupKo';
 import type { PlayerId, Settings, Tournament } from '../domain/types';
 import { minPlayers, parseNames, validateSetup } from '../domain/validate';
 import type { Action } from '../state/useTournament';
-import { buildMode, defaultModeForm, formFromMode, groupSizes, todayIso, type ModeChoice, type ModeForm } from './setupForm';
+import { buildMode, defaultLegs, defaultModeForm, formFromMode, groupSizes, shownLegs, todayIso, usedLegs, type ModeChoice, type ModeForm } from './setupForm';
 
 const MODES: { choice: ModeChoice; label: string }[] = [
   { choice: 'club', label: '2 Ligen + K.O. (Vereinsmodus)' },
@@ -22,7 +22,7 @@ export function SetupScreen({ t, dispatch, lastError }: Props) {
   const [date, setDate] = useState(s?.date ?? todayIso());
   const [namesText, setNamesText] = useState(t ? t.players.map((p) => p.name).join('\n') : '');
   const [modeForm, setModeForm] = useState<ModeForm>(s ? formFromMode(s.mode) : defaultModeForm);
-  const [legs, setLegs] = useState(s?.legs ?? { group: 3, ko: 3, final: 4 });
+  const [legs, setLegs] = useState(s?.legs ?? defaultLegs);
   const [boards, setBoards] = useState(s?.boards ?? 4);
   const [picked, setPicked] = useState<PlayerId | null>(null);
 
@@ -31,17 +31,15 @@ export function SetupScreen({ t, dispatch, lastError }: Props) {
   const fieldOptions = m.choice === 'groups' ? koFieldOptions(groupSizes(parsed.names.length, m.groups)) : [];
   // a chosen K.O. field that the current player count no longer allows falls back to "largest possible"
   const koFieldSize = m.koFieldSize && fieldOptions.includes(m.koFieldSize) ? m.koFieldSize : 0;
-  const settings: Settings = { name: name.trim(), date, boards, legs, mode: buildMode({ ...m, koFieldSize }) };
+  const settings: Settings = { name: name.trim(), date, boards, legs: usedLegs(m, legs), mode: buildMode({ ...m, koFieldSize }) };
   const setupErrors = validateSetup(settings, parsed.names.length);
-  const formErrors = [...parsed.errors, ...setupErrors];
+  const formErrors = [...(settings.name ? [] : ['Bitte einen Turniernamen eingeben.']), ...parsed.errors, ...setupErrors];
   // the draw belongs to the inputs it was made from; any later edit needs a new draw
   const drawStale = !!t && JSON.stringify([t.settings, t.players.map((p) => p.name)])
     !== JSON.stringify([settings, parsed.names]);
 
   const setMode = (patch: Partial<ModeForm>) => setModeForm({ ...m, ...patch });
-  const hasGroupLegs = m.choice !== 'singleKo' && m.choice !== 'doubleKo';
-  const hasKoLegs = m.choice !== 'roundRobin';
-  const hasFinalLegs = m.choice !== 'roundRobin' || m.finalTopTwo;
+  const shown = shownLegs(m);
   const playerName = (pid: PlayerId) => t?.players.find((p) => p.id === pid)?.name ?? pid;
 
   const pick = (pid: PlayerId) => {
@@ -143,11 +141,11 @@ export function SetupScreen({ t, dispatch, lastError }: Props) {
             <fieldset className="plain">
               <legend className="label">Legs zum Sieg</legend>
               <div className="row" style={{ gap: 'var(--sp-5)' }}>
-                {hasGroupLegs && <NumField id={`${id}-lg`} label="Gruppe/Liga" value={legs.group}
+                {shown.group && <NumField id={`${id}-lg`} label="Gruppe/Liga" value={legs.group}
                   onChange={(v) => setLegs({ ...legs, group: num(v) })} />}
-                {hasKoLegs && <NumField id={`${id}-lk`} label="K.O.-Runden" value={legs.ko}
+                {shown.ko && <NumField id={`${id}-lk`} label="K.O.-Runden" value={legs.ko}
                   onChange={(v) => setLegs({ ...legs, ko: num(v) })} />}
-                {hasFinalLegs && <NumField id={`${id}-lf`} label="Finale" value={legs.final}
+                {shown.final && <NumField id={`${id}-lf`} label="Finale" value={legs.final}
                   onChange={(v) => setLegs({ ...legs, final: num(v) })} />}
               </div>
             </fieldset>
@@ -158,7 +156,9 @@ export function SetupScreen({ t, dispatch, lastError }: Props) {
         <section className="card" aria-labelledby={`${id}-h4`}>
           <h2 id={`${id}-h4`}><span className="step" aria-hidden="true">4</span>Auslosung</h2>
           <div className="stack">
-            {formErrors.length > 0 && <ul className="errors" aria-live="polite">{formErrors.map((e) => <li key={e}>{e}</li>)}</ul>}
+            <div aria-live="polite">
+              {formErrors.length > 0 && <ul className="errors">{formErrors.map((e) => <li key={e}>{e}</li>)}</ul>}
+            </div>
             {lastError && <p className="errors" role="alert">{lastError}</p>}
             <div className="row">
               {t && !drawStale

@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { buildMode, defaultModeForm, formFromMode, groupSizes, todayIso } from './setupForm';
+import { buildMode, defaultLegs, defaultModeForm, formFromMode, groupSizes, shownLegs, todayIso, usedLegs } from './setupForm';
 
 describe('setupForm', () => {
-  it('default is the club mode: 2 groups with placement games', () => {
-    expect(buildMode(defaultModeForm)).toEqual({ kind: 'groupsKo', groups: 2, placementGames: true, thirdPlace: false });
+  it('default is the club mode: 2 groups with placement games and third-place match', () => {
+    expect(buildMode(defaultModeForm)).toEqual({ kind: 'groupsKo', groups: 2, placementGames: true, thirdPlace: true });
   });
 
   it('builds each mode with only its own options', () => {
@@ -35,5 +35,16 @@ describe('setupForm', () => {
 
   it('todayIso formats the local date', () => {
     expect(todayIso(new Date(2026, 10, 4))).toBe('2026-11-04');
+  });
+
+  it('hidden legs fields fall back to defaults so they cannot cause errors', () => {
+    const bad = { group: NaN, ko: NaN, final: NaN };
+    const f = (choice: typeof defaultModeForm.choice, finalTopTwo = false) => ({ ...defaultModeForm, choice, finalTopTwo });
+    expect(shownLegs(f('singleKo'))).toEqual({ group: false, ko: true, final: true });
+    expect(usedLegs(f('singleKo'), bad)).toEqual({ group: defaultLegs.group, ko: NaN, final: NaN });
+    expect(usedLegs(f('doubleKo'), bad).group).toBe(defaultLegs.group);
+    expect(usedLegs(f('roundRobin'), bad)).toEqual({ group: NaN, ko: defaultLegs.ko, final: defaultLegs.final });
+    expect(usedLegs(f('roundRobin', true), bad)).toEqual({ group: NaN, ko: defaultLegs.ko, final: NaN });
+    expect(usedLegs(f('club'), bad)).toEqual(bad);
   });
 });
