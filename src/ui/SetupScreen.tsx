@@ -1,5 +1,6 @@
 import { useId, useState } from 'react';
 import { koFieldOptions } from '../domain/multiGroupKo';
+import { BrandBar } from './Brand';
 import type { PlayerId, Settings, Tournament } from '../domain/types';
 import { minPlayers, parseNames, validateSetup } from '../domain/validate';
 import type { Action } from '../state/useTournament';
@@ -51,10 +52,11 @@ export function SetupScreen({ t, dispatch, lastError, loadFailed }: Props) {
 
   return (
     <main className="page">
-      <header className="page-header">
-        <h1 tabIndex={-1}>Dartplaner</h1>
-        <p className="sub">Neues Turnier anlegen</p>
-      </header>
+      <BrandBar />
+      <div className="page-header">
+        <p className="eyebrow">Setup</p>
+        <h1 tabIndex={-1}>Neues Turnier</h1>
+      </div>
 
       {loadFailed && <p className="errors banner-msg" role="alert">Gespeichertes Turnier konnte nicht gelesen werden.</p>}
 

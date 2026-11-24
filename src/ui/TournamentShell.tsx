@@ -3,6 +3,7 @@ import type { PlayerId, Tournament } from '../domain/types';
 import type { Action } from '../state/useTournament';
 import { canEditResult } from '../domain/tournament';
 import { BoardsView } from './BoardsView';
+import { BrandBar } from './Brand';
 import { ExportView } from './ExportView';
 import { KoView } from './KoView';
 import { ConfirmDialog, Modal } from './Modal';
@@ -34,16 +35,16 @@ export function TournamentShell({ t, dispatch, persistOk, lastError }: Props) {
 
   return (
     <main className="page">
-      <header className="shell-header">
-        <div>
-          <h1 tabIndex={-1}>{t.settings.name}</h1>
-          <p className="sub">{formatDate(t.settings.date)}</p>
-        </div>
+      <BrandBar>
         <div className="row" role="group" aria-label="Turnier">
           <button type="button" className="btn" disabled={t.phase === 'done'} onClick={() => setDialog('withdraw')}>Spieler abmelden</button>
           <button type="button" className="btn" onClick={() => setDialog('reset')}>Neues Turnier</button>
         </div>
-      </header>
+      </BrandBar>
+      <div className="page-header">
+        <p className="eyebrow">{formatDate(t.settings.date)}</p>
+        <h1 tabIndex={-1}>{t.settings.name}</h1>
+      </div>
 
       {!persistOk && <p className="errors banner-msg" role="alert">Speichern im Browser nicht möglich – bitte Seite nicht neu laden</p>}
       {lastError && lastError !== dismissed && (

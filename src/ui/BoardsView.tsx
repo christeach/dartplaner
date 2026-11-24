@@ -65,7 +65,7 @@ export function BoardsView({ t, dispatch, onEdit }: Props) {
             const next = suggestions.get(board) ?? null;
             return (
               <li key={board} className={running ? 'tile tile-live' : 'tile'}>
-                <h3 className="tile-head"><span>Board {board}</span> <span className="tile-state">{running ? 'läuft' : 'frei'}</span></h3>
+                <h3 className="tile-head"><span className="tile-board">Board <b>{board}</b></span> <span className="tile-state">{running ? 'läuft' : 'frei'}</span></h3>
                 {running ? <>
                   <p className="tile-players">{vs(running)}</p>
                   <p className="hint">{running.label} · First to {running.legsToWin}</p>

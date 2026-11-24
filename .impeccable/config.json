@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "src/ui/theme.css"
+        ],
+        "createdAt": "2026-11-24T18:08:57.515Z",
+        "reason": "Claude: flagged line is the .brand-bar::after dartboard-ring divider, a full-width horizontal stripe under the header, not a side bar on a rounded box"
+      }
+    ]
+  }
+}
