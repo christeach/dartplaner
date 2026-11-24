@@ -46,16 +46,42 @@ describe('scheduler', () => {
     expect(suggestNext(t)).toBeNull();
   });
 
-  it('ko phase puts round 1 before round 2 even if round-2 players rested longer', () => {
-    const pl = (id: string) => ({ kind: 'player' as const, id });
-    const base = { bracket: 'main' as const, label: '', legsToWin: 2 };
-    const done = (id: string, a: string, b: string, finishedAt: number): Match => ({ ...base, id, round: 1, order: 0,
-      a: pl(a), b: pl(b), status: 'done', finishedAt, result: { kind: 'legs', a: 2, b: 0 } });
-    const t = { ...mk(4), phase: 'ko' as const, matches: [
-      done('x', 'A', 'B', 1), done('y', 'C', 'D', 2),
-      { ...base, id: 'r2', round: 2, order: 0, a: pl('A'), b: pl('C'), status: 'open' },
-      { ...base, id: 'r1', round: 1, order: 5, a: pl('E'), b: pl('F'), status: 'open', },
-    ] as Match[] };
+  const pl = (id: string) => ({ kind: 'player' as const, id });
+  const base = { bracket: 'main' as const, label: '', legsToWin: 2 };
+  const open = (id: string, round: number, order: number, a: string, b: string, bracket: Match['bracket'] = 'main'): Match =>
+    ({ ...base, bracket, id, round, order, a: pl(a), b: pl(b), status: 'open' });
+  const done = (id: string, a: string, b: string, finishedAt: number, walkover = false): Match =>
+    ({ ...base, id, round: 1, order: 0, a: pl(a), b: pl(b), status: 'done', finishedAt,
+      result: walkover ? { kind: 'walkover', winner: 'a' } : { kind: 'legs', a: 2, b: 0 } });
+  const withMatches = (phase: Tournament['phase'], matches: Match[]): Tournament => ({ ...mk(4), phase, matches });
+
+  it('ko: round beats pause (round-2 players never played, round-1 players just finished)', () => {
+    const t = withMatches('ko', [done('x', 'A', 'B', 100), open('r2', 2, 0, 'E', 'F'), open('r1', 1, 5, 'A', 'B')]);
     expect(queue(t).map((m) => m.id)).toEqual(['r1', 'r2']);
+  });
+
+  it('ko: placement match with lower order but round+1 sorts after earlier-round main matches', () => {
+    const t = withMatches('ko', [
+      open('place', 2, 0, 'A', 'B', 'placement'), open('main2', 3, 1, 'C', 'D'), open('main1', 1, 9, 'E', 'F')]);
+    expect(queue(t).map((m) => m.id)).toEqual(['main1', 'place', 'main2']);
+  });
+
+  it('groups: longest pause first, then round, then order', () => {
+    const t = withMatches('groups', [
+      done('d1', 'A', 'B', 10), done('d2', 'C', 'D', 20), done('d3', 'E', 'F', 30),
+      open('late', 1, 0, 'E', 'F'), open('r2', 2, 0, 'A', 'B'), open('r1o2', 1, 2, 'A', 'B'), open('r1o1', 1, 1, 'A', 'B'),
+      open('mid', 1, 0, 'C', 'D')]);
+    expect(queue(t).map((m) => m.id)).toEqual(['r1o1', 'r1o2', 'r2', 'mid', 'late']);
+  });
+
+  it('groups: never-played players tie at -Infinity and fall back to round then order', () => {
+    const t = withMatches('groups', [open('b', 2, 0, 'A', 'B'), open('c', 1, 3, 'C', 'D'), open('a', 1, 1, 'E', 'F')]);
+    expect(queue(t).map((m) => m.id)).toEqual(['a', 'c', 'b']);
+  });
+
+  it('lastFinished ignores walkover results', () => {
+    const t = withMatches('groups', [done('w', 'A', 'B', 50, true), done('l', 'A', 'C', 7)]);
+    expect(lastFinished(t, 'A')).toBe(7);
+    expect(lastFinished(t, 'B')).toBe(-Infinity);
   });
 });

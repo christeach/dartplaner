@@ -19,12 +19,13 @@ export function queue(t: Tournament): Match[] {
     .flatMap((m) => [resolveSlot(t.matches, m.a), resolveSlot(t.matches, m.b)]));
   const pause = (m: Match) => Math.max(...[m.a, m.b].map((s) => lastFinished(t, resolveSlot(t.matches, s) as PlayerId)));
   const ko = t.phase === 'ko';
+  const cmp = (x: number, y: number) => (x === y ? 0 : x < y ? -1 : 1); // explicit: -Infinity - -Infinity is NaN
   return t.matches
     .filter((m) => isPlayable(t.matches, m) && ![m.a, m.b].some((s) => busy.has(resolveSlot(t.matches, s))))
     .map((m) => ({ m, p: pause(m) }))
     .sort((x, y) => ko
-      ? x.m.round - y.m.round || x.p - y.p || x.m.order - y.m.order
-      : x.p - y.p || x.m.round - y.m.round || x.m.order - y.m.order)
+      ? x.m.round - y.m.round || cmp(x.p, y.p) || x.m.order - y.m.order
+      : cmp(x.p, y.p) || x.m.round - y.m.round || x.m.order - y.m.order)
     .map((x) => x.m);
 }
 
