@@ -2,7 +2,7 @@
 
 Turnierplaner für den Dartverein: Spieler eintragen, auslosen, Spiele auf die Boards verteilen, Ergebnisse eintragen, Tabellen und K.O.-Baum ansehen, am Ende als PDF drucken oder als Excel-Datei exportieren.
 
-Die App läuft komplett im Browser, ohne Server und ohne Konto. Der Turnierstand wird im Browser gespeichert (localStorage) und übersteht ein Neuladen der Seite. Ist die Seite einmal geöffnet, braucht sie kein Internet mehr: Sie nutzt nur Systemschriften und lädt nichts von fremden Servern nach.
+Die App läuft komplett im Browser, ohne Server und ohne Konto. Der Turnierstand wird im Browser gespeichert (localStorage) und übersteht ein Neuladen der Seite. Solange der Tab offen bleibt, braucht sie kein Internet mehr: Sie nutzt nur Systemschriften und lädt nichts von fremden Servern nach. Ohne Internet lässt sich die Seite aber nicht neu laden.
 
 Modi: 2 Ligen + K.O. (Vereinsmodus), Gruppen + K.O., Jeder gegen jeden, K.O., Doppel-K.O.
 
@@ -42,4 +42,4 @@ Lokal ansehen: `npm run preview`.
 
 **GitHub Pages:** den Inhalt von `dist/` in einen eigenen Branch (z. B. `gh-pages`) legen und in den Repository-Einstellungen unter „Pages“ diesen Branch als Quelle auswählen.
 
-Die gespeicherten Turniere liegen im Browser des Geräts, nicht auf dem Server. Wer das Gerät wechselt, sollte vorher unter „Export“ sichern.
+Der Turnierstand liegt nur in diesem Browser auf diesem Gerät, nicht auf dem Server. Er lässt sich nicht auf ein anderes Gerät übertragen; der Excel-Export ist eine Auswertung, keine Sicherung zum Wiedereinlesen.
