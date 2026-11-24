@@ -55,3 +55,18 @@ export function koLayout(t: Tournament): { columns: KoSection[]; lists: KoSectio
 /** Extra place info a label does not already carry, e.g. "Verlierer: Platz 5–8". */
 export const placeHint = (m: Match): string | null =>
   m.loserPlace && !m.winnerPlace ? `Verlierer: Platz ${placeLabel(m.loserPlace, m.loserPlaceTo)}` : null;
+
+export const hasGroupTables = (t: Tournament) => t.settings.mode.kind === 'groupsKo' || t.settings.mode.kind === 'roundRobin';
+
+export const playerName = (t: Tournament, m: Match, side: 'a' | 'b') => {
+  const id = resolveSlot(t.matches, m[side]);
+  return t.players.find((p) => p.id === id)?.name ?? '?';
+};
+
+/** "A 3:1 B" or "A kampflos"; null for bye advances (nothing was played). */
+export function resultText(t: Tournament, m: Match): string | null {
+  const a = resolveSlot(t.matches, m.a), b = resolveSlot(t.matches, m.b);
+  if (m.status !== 'done' || !m.result || !a || !b || a === 'bye' || b === 'bye') return null;
+  if (m.result.kind === 'walkover') return `${playerName(t, m, m.result.winner)} kampflos gegen ${playerName(t, m, m.result.winner === 'a' ? 'b' : 'a')}`;
+  return `${playerName(t, m, 'a')} ${m.result.a}:${m.result.b} ${playerName(t, m, 'b')}`;
+}

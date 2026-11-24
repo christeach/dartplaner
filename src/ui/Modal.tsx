@@ -10,11 +10,11 @@ export function Modal({ title, onClose, children }: Props) {
   const id = useId();
   useEffect(() => {
     const d = ref.current!;
+    const o = opener.current;
     if (!d.open) d.showModal();
     return () => {
       d.close();
       // the opener may be gone (board tile changed, or the whole screen after "Neues Turnier"): use the page heading
-      const o = opener.current;
       (o?.isConnected ? o : document.querySelector<HTMLElement>('main h1'))?.focus();
     };
   }, []);

@@ -172,7 +172,8 @@ h1[tabindex="-1"]:focus { outline: none; }
 .alert-row { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-4); flex-wrap: wrap; padding-left: var(--sp-4); }
 .tabs { display: flex; gap: var(--sp-1); flex-wrap: wrap; margin-bottom: var(--sp-5); padding: var(--sp-1);
   background: var(--c-surface-2); border-radius: var(--r-md); }
-.tab { font: inherit; font-weight: 700; min-height: var(--touch); padding: var(--sp-2) var(--sp-5); flex: 1 1 auto;
+/* small side padding so all four tabs fit one row at 375px; flex-grow widens them on larger screens */
+.tab { font: inherit; font-weight: 700; min-height: var(--touch); padding: var(--sp-2); flex: 1 1 auto;
   border: 0; border-radius: var(--r-sm); background: transparent; color: var(--c-text-muted); cursor: pointer; }
 .tab:hover { color: var(--c-text); }
 .tab[aria-current="page"] { background: var(--c-surface); color: var(--c-text); box-shadow: var(--shadow); }
@@ -219,7 +220,8 @@ h1[tabindex="-1"]:focus { outline: none; }
   border-radius: var(--r-md); border: 2px solid var(--c-border-strong); background: var(--c-surface); color: var(--c-text); }
 .score-btn:hover { background: var(--c-surface-2); }
 .score-btn[aria-pressed="true"] { background: var(--c-primary); border-color: var(--c-primary); color: var(--c-on-primary); }
-.stats > summary { cursor: pointer; font-weight: 700; min-height: var(--touch); display: flex; align-items: center; }
+/* keep display: list-item so the disclosure marker stays visible; padding gives the 48px target */
+.stats > summary { cursor: pointer; font-weight: 700; padding: var(--sp-3) 0; }
 .stats[open] > summary { margin-bottom: var(--sp-3); }
 .stats-fields { display: grid; gap: var(--sp-3); grid-template-columns: repeat(2, minmax(0, 1fr)); margin-bottom: var(--sp-3); }
 .stats-fields .input-num { width: 100%; }

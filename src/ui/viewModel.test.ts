@@ -3,7 +3,7 @@ import { isPlayable } from '../domain/resolve';
 import type { StandingRow } from '../domain/standings';
 import { createTournament, pendingTies, recordResult, setTieOrder, start, startKo } from '../domain/tournament';
 import type { Match, Mode, Tournament } from '../domain/types';
-import { formatDate, koLayout, placeGroups, placeLabel, rankLabels, slotLabel } from './viewModel';
+import { formatDate, koLayout, placeGroups, placeLabel, rankLabels, resultText, slotLabel } from './viewModel';
 
 const mk = (mode: Mode, n: number) => start(createTournament({ name: 'T', date: '2026-11-24', boards: 4,
   legs: { group: 3, ko: 3, final: 4 }, mode }, Array.from({ length: n }, (_, i) => `S${i + 1}`), 7), 1);
@@ -57,5 +57,17 @@ describe('viewModel', () => {
 
   it('has no K.O. layout for a plain round robin', () => {
     expect(koLayout(mk({ kind: 'roundRobin', finalTopTwo: false }, 4))).toEqual({ columns: [], lists: [] });
+  });
+
+  it('writes results as text, skipping open matches and byes', () => {
+    const t0 = mk({ kind: 'roundRobin', finalTopTwo: false }, 4);
+    const m = t0.matches[0];
+    expect(resultText(t0, m)).toBeNull();
+    const t = recordResult(t0, m.id, { kind: 'legs', a: 3, b: 1 }, undefined, 2);
+    const [a, b] = [m.a, m.b].map((s) => t.players.find((p) => s.kind === 'player' && p.id === s.id)!.name);
+    expect(resultText(t, t.matches[0])).toBe(`${a} 3:1 ${b}`);
+    const wo: Match = { ...m, status: 'done', result: { kind: 'walkover', winner: 'b' } };
+    expect(resultText(t0, wo)).toBe(`${b} kampflos gegen ${a}`);
+    expect(resultText(t0, { ...wo, a: { kind: 'bye' } })).toBeNull();
   });
 });

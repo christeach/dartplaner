@@ -5,7 +5,8 @@ import type { Match, PlayerId, Result, Tournament } from '../domain/types';
 import type { Action } from '../state/useTournament';
 import { boardSuggestions, canStartKo } from './liveForm';
 import { Modal } from './Modal';
-import { playerName, ResultDialog } from './ResultDialog';
+import { ResultDialog } from './ResultDialog';
+import { playerName } from './viewModel';
 
 interface Props { t: Tournament; dispatch: (a: Action) => void; onEdit(matchId: string): void }
 

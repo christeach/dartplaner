@@ -1,12 +1,8 @@
-import { resolveSlot } from '../domain/resolve';
 import { canEditResult, computePlacements, groupStandings } from '../domain/tournament';
-import type { Group, Match, PlayerId, Tournament } from '../domain/types';
-import { playerName } from './ResultDialog';
-import { placeGroups, rankLabels } from './viewModel';
+import type { Group, PlayerId, Tournament } from '../domain/types';
+import { hasGroupTables, placeGroups, rankLabels, resultText } from './viewModel';
 
 interface Props { t: Tournament; onEdit(matchId: string): void }
-
-export const hasGroupTables = (t: Tournament) => t.settings.mode.kind === 'groupsKo' || t.settings.mode.kind === 'roundRobin';
 
 function Name({ t, id }: { t: Tournament; id: PlayerId }) {
   const p = t.players.find((x) => x.id === id);
@@ -50,14 +46,6 @@ export function PlacementList({ t }: { t: Tournament }) {
       ))}
     </ol>
   );
-}
-
-/** "A 3:1 B" or "A kampflos"; null for bye advances (nothing was played). */
-export function resultText(t: Tournament, m: Match): string | null {
-  const a = resolveSlot(t.matches, m.a), b = resolveSlot(t.matches, m.b);
-  if (m.status !== 'done' || !m.result || !a || !b || a === 'bye' || b === 'bye') return null;
-  if (m.result.kind === 'walkover') return `${playerName(t, m, m.result.winner)} kampflos gegen ${playerName(t, m, m.result.winner === 'a' ? 'b' : 'a')}`;
-  return `${playerName(t, m, 'a')} ${m.result.a}:${m.result.b} ${playerName(t, m, 'b')}`;
 }
 
 export function TablesView({ t, onEdit }: Props) {

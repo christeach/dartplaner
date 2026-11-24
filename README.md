@@ -1,50 +1,45 @@
-# React + TypeScript + Vite
+# Dartplaner
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Turnierplaner für den Dartverein: Spieler eintragen, auslosen, Spiele auf die Boards verteilen, Ergebnisse eintragen, Tabellen und K.O.-Baum ansehen, am Ende als PDF drucken oder als Excel-Datei exportieren.
 
-Currently, two official plugins are available:
+Die App läuft komplett im Browser, ohne Server und ohne Konto. Der Turnierstand wird im Browser gespeichert (localStorage) und übersteht ein Neuladen der Seite. Ist die Seite einmal geöffnet, braucht sie kein Internet mehr: Sie nutzt nur Systemschriften und lädt nichts von fremden Servern nach.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Modi: 2 Ligen + K.O. (Vereinsmodus), Gruppen + K.O., Jeder gegen jeden, K.O., Doppel-K.O.
 
-## Expanding the ESLint configuration
+## Entwickeln
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+Voraussetzung: Node.js 18 oder neuer.
 
-- Configure the top-level `parserOptions` property like this:
-
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+```sh
+npm install
+npm run dev
 ```
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+`npm run dev` startet einen lokalen Server; die Adresse steht in der Ausgabe (meist http://localhost:5173).
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
+Falls `npm install` wegen eines kaputten npm-Caches mit Berechtigungsfehlern abbricht, mit einem anderen Cache-Ordner installieren, z. B. `npm_config_cache=/tmp/npm-cache npm install`.
 
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
+Tests und Prüfungen:
+
+```sh
+npm test
+npm run lint
 ```
+
+## Bauen
+
+```sh
+npm run build
+```
+
+Das Ergebnis liegt in `dist/`: eine `index.html` und der Ordner `assets/`. Die Pfade sind relativ, die App läuft also in jedem Unterordner.
+
+Lokal ansehen: `npm run preview`.
+
+## Veröffentlichen
+
+**Netlify Drop:** https://app.netlify.com/drop öffnen und den Ordner `dist/` in das Browserfenster ziehen. Netlify gibt eine Adresse zurück, unter der die App erreichbar ist.
+
+**GitHub Pages:** den Inhalt von `dist/` in einen eigenen Branch (z. B. `gh-pages`) legen und in den Repository-Einstellungen unter „Pages“ diesen Branch als Quelle auswählen.
+
+Die gespeicherten Turniere liegen im Browser des Geräts, nicht auf dem Server. Wer das Gerät wechselt, sollte vorher unter „Export“ sichern.

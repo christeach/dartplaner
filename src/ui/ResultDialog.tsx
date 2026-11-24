@@ -1,9 +1,9 @@
 import { useId, useState } from 'react';
-import { resolveSlot } from '../domain/resolve';
 import type { Match, PlayerStats, Result, Tournament } from '../domain/types';
 import { isValidLegs, validateStats } from '../domain/validate';
 import { formToStats, resultLabel, statsToForm, type StatsForm } from './liveForm';
 import { Modal } from './Modal';
+import { playerName } from './viewModel';
 
 type Stats = Match['stats'];
 type Side = 'a' | 'b';
@@ -18,11 +18,6 @@ const FIELDS: { key: keyof PlayerStats; label: string; prefix: string; min: numb
   { key: 'highFinish', label: 'Highfinish', prefix: 'Highfinish', min: 2, max: 170 },
   { key: 'shortLeg', label: 'Shortleg', prefix: 'Shortleg', min: 9 },
 ];
-
-export const playerName = (t: Tournament, m: Match, side: Side) => {
-  const id = resolveSlot(t.matches, m[side]);
-  return t.players.find((p) => p.id === id)?.name ?? '?';
-};
 
 export function ResultDialog({ match: m, t, mode, locked = false, onSave, onClose }: Props) {
   const id = useId();
@@ -53,7 +48,7 @@ export function ResultDialog({ match: m, t, mode, locked = false, onSave, onClos
   return (
     <Modal title={title} onClose={onClose}>
       <p className="hint">{m.label}{mode === 'edit' ? ` · First to ${n}` : ''}</p>
-      {locked && <p>Das Ergebnis steht fest, weil ein Folgespiel schon läuft oder gespielt ist. Die Statistik lässt sich noch ändern.</p>}
+      {locked && <p>Das Ergebnis ist festgeschrieben – nur die Highlights können noch geändert werden.</p>}
       <div className="stack" style={{ gap: 'var(--sp-4)' }}>
         {(['a', 'b'] as const).map((side) => (
           <div key={side} className="score-row" role="group" aria-labelledby={`${id}-${side}`}>
@@ -61,7 +56,7 @@ export function ResultDialog({ match: m, t, mode, locked = false, onSave, onClos
             <div className="score-buttons">
               {Array.from({ length: n + 1 }, (_, k) => (
                 <button key={k} type="button" className="score-btn" aria-pressed={legs[side] === k} disabled={locked}
-                  aria-label={`${names[side]}: ${k} Legs`} onClick={() => setLegs({ ...legs, [side]: k })}>
+                  aria-label={`${names[side]}: ${k} ${k === 1 ? 'Leg' : 'Legs'}`} onClick={() => setLegs({ ...legs, [side]: k })}>
                   {k}
                 </button>
               ))}

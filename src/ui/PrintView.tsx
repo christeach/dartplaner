@@ -1,8 +1,8 @@
 import type { Tournament } from '../domain/types';
 import { eveningHighlights } from '../export/highlights';
 import './print.css';
-import { hasGroupTables, PlacementList, resultText, StandingsTable } from './TablesView';
-import { formatDate, koLayout, slotLabel } from './viewModel';
+import { PlacementList, StandingsTable } from './TablesView';
+import { formatDate, hasGroupTables, koLayout, resultText, slotLabel } from './viewModel';
 
 /** Print-only layout (A4); hidden on screen by print.css. */
 export function PrintView({ t }: { t: Tournament }) {

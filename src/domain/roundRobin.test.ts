@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { roundRobinMatches, interleave } from './roundRobin';
+import type { Slot } from './types';
 
-const pid = (m: { a: any; b: any }) => [m.a.id, m.b.id] as string[];
+const pid = (m: { a: Slot; b: Slot }) => [m.a, m.b].map((s) => (s.kind === 'player' ? s.id : s.kind));
 const ids = (n: number) => Array.from({ length: n }, (_, i) => `p${i}`);
 
 describe('roundRobinMatches', () => {
