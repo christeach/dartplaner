@@ -1,45 +1,47 @@
 import { describe, expect, it } from 'vitest';
 import { createTournament, recordResult, start } from '../domain/tournament';
-import type { Settings } from '../domain/types';
+import type { Match, PlayerStats, Settings, Tournament } from '../domain/types';
 import { eveningHighlights, playerHighlights } from './highlights';
 
 const settings: Settings = { name: 'T', date: '2026-11-24', boards: 2, legs: { group: 2, ko: 2, final: 2 }, mode: { kind: 'roundRobin', finalTopTwo: false } };
+const pid = (s: Match['a']) => (s as { id: string }).id;
+const fresh = () => start(createTournament(settings, ['Anna', 'Ben', 'Cem'], 1), 1);
 
-function played() {
-  let t = start(createTournament(settings, ['Anna', 'Ben', 'Cem'], 1), 1);
-  const [m1, m2] = t.matches.filter((m) => m.bracket === 'group');
-  const id = (s: typeof m1.a) => (s as { id: string }).id;
-  t = recordResult(t, m1.id, { kind: 'legs', a: 2, b: 0 }, { a: { s180: 2, highScore: 140, highFinish: 90, shortLeg: 15 }, b: { s180: 1 } }, 2);
-  const m2n = t.matches.find((m) => m.id === m2.id)!;
-  t = recordResult(t, m2n.id, { kind: 'legs', a: 2, b: 1 }, { a: { s180: 3, highScore: 160, highFinish: 60, shortLeg: 18 }, b: { s180: 0 } }, 3);
-  return { t, m1, m2: m2n, id };
+// Records match m with `mine` on the side of player `who` and `other` on the opposite side.
+function record(t: Tournament, m: Match, who: string, mine: PlayerStats, other: PlayerStats): Tournament {
+  const mineIsA = pid(m.a) === who;
+  return recordResult(t, m.id, { kind: 'legs', a: 2, b: 0 }, mineIsA ? { a: mine, b: other } : { a: other, b: mine }, 2);
 }
 
 describe('highlights', () => {
   it('aggregates per player: sum 180s, max score/finish, min shortleg', () => {
-    const { t, m1, m2, id } = played();
-    const rows = playerHighlights(t);
-    const shared = [id(m1.a), id(m1.b)].find((p) => [id(m2.a), id(m2.b)].includes(p))!;
-    const total = rows.reduce((s, r) => s + r.s180, 0);
-    expect(total).toBe(6);
-    const r = rows.find((x) => x.playerId === id(m1.a))!;
-    expect(r.s180).toBeGreaterThanOrEqual(2);
-    expect(shared).toBeDefined();
+    let t = fresh();
+    const [m1, m2] = t.matches;
+    const shared = [pid(m1.a), pid(m1.b)].find((p) => [pid(m2.a), pid(m2.b)].includes(p))!;
+    t = record(t, m1, shared, { s180: 2, highScore: 140, highFinish: 60, shortLeg: 18 }, { s180: 0 });
+    t = record(t, m2, shared, { s180: 3, highScore: 100, highFinish: 90, shortLeg: 15 }, { s180: 0 });
+    const r = playerHighlights(t).find((x) => x.playerId === shared)!;
+    expect(r).toMatchObject({ s180: 5, highScore: 140, highFinish: 90, shortLeg: 15 });
   });
 
-  it('evening highlights pick the best values and join ties', () => {
-    const { t } = played();
-    const e = eveningHighlights(t);
-    expect(e.highScore?.value).toBe(160);
-    expect(e.highFinish?.value).toBe(90);
-    expect(e.shortLeg?.value).toBe(15);
-    expect(e.most180?.value).toBeGreaterThanOrEqual(3);
+  it('evening highlights pick the best values with the right names', () => {
+    let t = fresh();
+    const [m1, m2] = t.matches;
+    const shared = [pid(m1.a), pid(m1.b)].find((p) => [pid(m2.a), pid(m2.b)].includes(p))!;
+    t = record(t, m1, shared, { s180: 2, highScore: 140, highFinish: 60, shortLeg: 18 }, { s180: 1 });
+    t = record(t, m2, shared, { s180: 3, highScore: 100, highFinish: 90, shortLeg: 15 }, { s180: 0 });
+    const name = t.players.find((p) => p.id === shared)!.name;
+    expect(eveningHighlights(t)).toEqual({
+      most180: { names: name, value: 5 }, highScore: { names: name, value: 140 },
+      highFinish: { names: name, value: 90 }, shortLeg: { names: name, value: 15 },
+    });
   });
 
-  it('ties join names with ", "', () => {
-    let t = start(createTournament(settings, ['Anna', 'Ben', 'Cem'], 1), 1);
+  it('ties join names with ", " in player order', () => {
+    let t = fresh();
     const m = t.matches[0];
     t = recordResult(t, m.id, { kind: 'legs', a: 2, b: 0 }, { a: { s180: 1 }, b: { s180: 1 } }, 2);
-    expect(eveningHighlights(t).most180).toEqual({ names: expect.stringContaining(', '), value: 1 });
+    const names = [m.a, m.b].map((s) => t.players.find((p) => p.id === pid(s))!.name);
+    expect(eveningHighlights(t).most180).toEqual({ names: names.join(', '), value: 1 });
   });
 });

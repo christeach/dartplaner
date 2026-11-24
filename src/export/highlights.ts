@@ -1,4 +1,4 @@
-import type { PlayerId, PlayerStats, Tournament } from '../domain/types';
+import type { PlayerId, PlayerStats, Slot, Tournament } from '../domain/types';
 
 export interface PlayerHighlight { playerId: PlayerId; name: string; s180: number; highScore?: number; highFinish?: number; shortLeg?: number }
 type Best = { names: string; value: number };
@@ -8,8 +8,8 @@ const min = (a?: number, b?: number) => (a === undefined ? b : b === undefined ?
 
 export function playerHighlights(t: Tournament): PlayerHighlight[] {
   const rows = new Map<PlayerId, PlayerHighlight>(t.players.map((p) => [p.id, { playerId: p.id, name: p.name, s180: 0 }]));
-  const add = (slot: { kind: string; id?: string }, s?: PlayerStats) => {
-    const r = slot.kind === 'player' && s ? rows.get(slot.id!) : undefined;
+  const add = (slot: Slot, s?: PlayerStats) => {
+    const r = slot.kind === 'player' && s ? rows.get(slot.id) : undefined;
     if (!r || !s) return;
     r.s180 += s.s180;
     const hs = max(r.highScore, s.highScore), hf = max(r.highFinish, s.highFinish), sl = min(r.shortLeg, s.shortLeg);

@@ -32,4 +32,25 @@ describe('xlsx export', () => {
   it('builds the file name with sanitized characters', () => {
     expect(exportFileName(createTournament(settings, ['A', 'B', 'C'], 1))).toBe('Turnier 11_24_2026-11-24.xlsx');
   });
+
+  it('writes table rows, placements with an en-dash range and highlight rows', () => {
+    let t = start(createTournament(settings, ['Anna', 'Ben', 'Cem'], 1), 1);
+    t = recordResult(t, t.matches[0].id, { kind: 'legs', a: 2, b: 1 }, { a: { s180: 2, highScore: 140 }, b: { s180: 1 } }, 2);
+    const wb = buildWorkbook(t);
+    const nameOf = (id: string) => t.players.find((p) => p.id === id)!.name;
+    const m = t.matches[0];
+    const winner = nameOf((m.a as { id: string }).id);
+    expect(rows(wb, 'Tabellen')[2]).toEqual([1, winner, 1, 1, 0, '2:1', 1, 2]);
+    expect(rows(wb, 'Highlights')).toEqual([['Name', '180er', 'Highscore', 'Highfinish', 'Shortleg'],
+      ...t.players.map((p) => {
+        return p.name === winner ? [p.name, 2, 140] : p.name === nameOf((m.b as { id: string }).id) ? [p.name, 1] : [p.name, 0];
+      })]);
+    // knockout, round 1 of 8 played: the four losers share places 5-8
+    const ko: Settings = { ...settings, mode: { kind: 'singleKo', thirdPlace: false } };
+    let k = start(createTournament(ko, Array.from({ length: 8 }, (_, i) => `P${i + 1}`), 1), 1);
+    for (const q of k.matches.filter((x) => x.round === 1)) k = recordResult(k, q.id, { kind: 'legs', a: 2, b: 0 }, undefined, 2);
+    const plat = rows(buildWorkbook(k), 'Platzierung');
+    expect(plat[0]).toEqual(['Platz', 'Name']);
+    expect(plat.slice(1).filter((r) => r[0] === '5–8')).toHaveLength(4);
+  });
 });
