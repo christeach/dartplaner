@@ -69,6 +69,8 @@
   --content-max: 1200px;
   --dur: 160ms;
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);     /* entrances */
+  --ease-back: cubic-bezier(0.34, 1.56, 0.64, 1); /* easeOutBack: celebration only */
 }
 
 @media (prefers-color-scheme: light) {
@@ -312,8 +314,13 @@ h1[tabindex="-1"]:focus { outline: none; }
 }
 /* status strip drawn inside the tile and clipped by its radius, so the corners stay clean */
 .tile { position: relative; overflow: hidden; }
-.tile::before { content: ""; position: absolute; inset: 0 0 auto; height: 4px; background: var(--c-border-strong); }
-.tile-live::before { background: var(--c-live); }
+.tile::before, .tile::after { content: ""; position: absolute; inset: 0 0 auto; height: 4px; background: var(--c-border-strong); }
+/* live strip grows from the left when a match starts, shrinks back when the board frees up */
+.tile::after {
+  background: var(--c-live); transform: scaleX(0); transform-origin: left;
+  transition: transform 300ms var(--ease-out);
+}
+.tile-live::after { transform: none; }
 .tile-board {
   display: inline-flex; align-items: baseline; gap: var(--sp-2);
   text-transform: uppercase; letter-spacing: 0.14em; font-size: 0.8125rem; font-weight: 700;
@@ -486,6 +493,40 @@ h1[tabindex="-1"]:focus { outline: none; }
 .ko-score { font-family: var(--font-display); font-size: 1.25rem; font-weight: 900; }
 
 /* ── animations ── */
+/* banners slide in instead of shoving the boards down in one frame */
+.banner {
+  transition: opacity 300ms var(--ease-out), transform 300ms var(--ease-out);
+  @starting-style { opacity: 0; transform: translateY(8px); }
+}
+/* end of the evening: the one place that gets a little bounce, and the ring draws itself once */
+.banner-done { animation: banner-pop 500ms var(--ease-back) both; }
+.page:has(.banner-done) .brand-bar::after { transform-origin: left; animation: ring-draw 900ms var(--ease-out) 150ms both; }
+@keyframes banner-pop { from { opacity: 0; transform: translateY(8px) scale(0.97); } }
+@keyframes ring-draw { from { transform: scaleX(0); } }
+
+/* newest result eases into the top of the list; rows already shown stay put */
+.list-recent > .list-row {
+  transition: opacity 250ms var(--ease-out), transform 250ms var(--ease-out);
+  @starting-style { opacity: 0; transform: translateY(-6px); }
+}
+
+/* the draw: names appear one after another, capped so 64 players still finish in ~0.9s */
+.draw-in { animation: draw-in 250ms var(--ease-out) both; animation-delay: min(calc(var(--i) * 40ms), 600ms); }
+@keyframes draw-in { from { opacity: 0; transform: translateY(6px); } }
+
+/* logo: the dart flies into the bull once per load and quivers */
+.logo-dart {
+  transform-box: view-box; transform-origin: 51px 49px;
+  animation: dart-throw 650ms var(--ease-out) 150ms both;
+}
+@keyframes dart-throw {
+  0% { opacity: 0; transform: translate(26px, -26px); }
+  55% { opacity: 1; transform: translate(0, 0) rotate(0); }
+  72% { transform: rotate(-5deg); }
+  86% { transform: rotate(2deg); }
+  100% { transform: rotate(0); }
+}
+
 @keyframes pulse-dot {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.3; }
@@ -498,6 +539,9 @@ h1[tabindex="-1"]:focus { outline: none; }
   .score-btn:active, .ko-click:active { transform: none !important; }
   .dialog[open] { animation: fade-in 150ms ease-out; }
   .tile-live .tile-state::before { animation: none; }
+  /* keep the fades that say "this is new", drop movement */
+  .banner-done, .draw-in { animation-name: fade-in; animation-timing-function: ease-out; }
+  .logo-dart, .page:has(.banner-done) .brand-bar::after { animation: none; }
 }
 @media (prefers-reduced-transparency: reduce) {
   .tabs { background: var(--c-surface-2); -webkit-backdrop-filter: none; backdrop-filter: none; }

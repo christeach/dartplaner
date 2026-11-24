@@ -51,7 +51,7 @@ export function BoardsView({ t, dispatch, onEdit }: Props) {
       )}
 
       {t.phase === 'done' && (
-        <section className="banner banner-live" aria-labelledby="done-h">
+        <section className="banner banner-live banner-done" aria-labelledby="done-h">
           <h2 id="done-h">Turnier beendet</h2>
           <p>Alle Spiele sind gespielt. Endstand unter „Tabellen“ und „Export“.</p>
         </section>
@@ -106,7 +106,7 @@ export function BoardsView({ t, dispatch, onEdit }: Props) {
       {recent.length > 0 && (
         <section className="card" aria-labelledby="recent-h">
           <h2 id="recent-h">Letzte Ergebnisse</h2>
-          <ol className="list">
+          <ol className="list list-recent">
             {recent.map((m) => {
               const r = m.result as Extract<Result, { kind: 'legs' }>;
               return (

@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { useId, useState, type CSSProperties } from 'react';
 import { koFieldOptions } from '../domain/multiGroupKo';
 import { BrandBar } from './Brand';
 import type { PlayerId, Settings, Tournament } from '../domain/types';
@@ -182,13 +182,14 @@ export function SetupScreen({ t, dispatch, lastError, loadFailed }: Props) {
                   {picked ? `${playerName(picked)} ausgewählt. Zweiten Spieler antippen zum Tauschen.`
                     : 'Zum Tauschen zwei Spieler nacheinander antippen.'}
                 </p>
-                <div className="groups">
-                  {t.groups.map((g) => (
+                {/* keyed by seed: a new draw replays the reveal, a swap does not */}
+                <div className="groups" key={t.seed}>
+                  {t.groups.map((g, gi) => (
                     <div key={g.id} className="group">
                       <h3>{g.name}</h3>
                       <ol>
-                        {g.playerIds.map((pid) => (
-                          <li key={pid}>
+                        {g.playerIds.map((pid, pi) => (
+                          <li key={pid} className="draw-in" style={{ '--i': drawOrder(t, gi, pi) } as CSSProperties}>
                             <button type="button" className="player" aria-pressed={picked === pid} onClick={() => pick(pid)}>
                               {playerName(pid)}
                             </button>
@@ -210,6 +211,11 @@ export function SetupScreen({ t, dispatch, lastError, loadFailed }: Props) {
       </div>
     </main>
   );
+}
+
+// players revealed row by row across groups, like names drawn one at a time
+function drawOrder(t: Tournament, gi: number, pi: number) {
+  return pi * t.groups.length + gi;
 }
 
 function NumField({ id, label, value, onChange }: { id: string; label: string; value: number; onChange: (v: string) => void }) {
