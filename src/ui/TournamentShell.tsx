@@ -1,9 +1,15 @@
 import { useEffect, useState } from 'react';
 import type { PlayerId, Tournament } from '../domain/types';
 import type { Action } from '../state/useTournament';
+import { canEditResult } from '../domain/tournament';
 import { BoardsView } from './BoardsView';
+import { ExportView } from './ExportView';
+import { KoView } from './KoView';
 import { ConfirmDialog, Modal } from './Modal';
+import { PrintView } from './PrintView';
 import { ResultDialog } from './ResultDialog';
+import { TablesView } from './TablesView';
+import { formatDate } from './viewModel';
 
 type Tab = 'boards' | 'tables' | 'ko' | 'export';
 
@@ -25,14 +31,13 @@ export function TournamentShell({ t, dispatch, persistOk, lastError }: Props) {
     { id: 'export', label: 'Export' },
   ];
   const edited = editing ? t.matches.find((m) => m.id === editing) : undefined;
-  const [y, mo, d] = t.settings.date.split('-');
 
   return (
     <main className="page">
       <header className="shell-header">
         <div>
           <h1 tabIndex={-1}>{t.settings.name}</h1>
-          <p className="sub">{d}.{mo}.{y}</p>
+          <p className="sub">{formatDate(t.settings.date)}</p>
         </div>
         <div className="row" role="group" aria-label="Turnier">
           <button type="button" className="btn" disabled={t.phase === 'done'} onClick={() => setDialog('withdraw')}>Spieler abmelden</button>
@@ -56,11 +61,17 @@ export function TournamentShell({ t, dispatch, persistOk, lastError }: Props) {
       </nav>
 
       {tab === 'boards' && <BoardsView t={t} dispatch={dispatch} onEdit={setEditing} />}
-      {tab !== 'boards' && <p className="hint">Folgt.</p>}
+      {tab === 'tables' && <TablesView t={t} onEdit={setEditing} />}
+      {tab === 'ko' && <KoView t={t} onEdit={setEditing} />}
+      {tab === 'export' && <ExportView t={t} />}
+      <PrintView t={t} />
 
       {edited && (
-        <ResultDialog match={edited} t={t} mode="edit" onClose={() => setEditing(null)}
-          onSave={(result, stats) => { dispatch({ type: 'edit', matchId: edited.id, result, stats }); setEditing(null); }} />
+        <ResultDialog match={edited} t={t} mode="edit" locked={!canEditResult(t, edited.id)} onClose={() => setEditing(null)}
+          onSave={(result, stats) => {
+            dispatch(canEditResult(t, edited.id) ? { type: 'edit', matchId: edited.id, result, stats } : { type: 'editStats', matchId: edited.id, stats });
+            setEditing(null);
+          }} />
       )}
       {dialog === 'withdraw' && <WithdrawDialog t={t} dispatch={dispatch} onClose={() => setDialog(null)} />}
       {dialog === 'reset' && (

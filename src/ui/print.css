@@ -1,0 +1,40 @@
+/* Print layout (A4 portrait, black on white). On screen only the app is visible, in print only .print-view. */
+.print-view { display: none; }
+
+@media print {
+  @page { size: A4 portrait; margin: 12mm 14mm; }
+  html, body { background: #fff !important; color: #000 !important; font-size: 10pt; }
+  .page { max-width: none; margin: 0; padding: 0; }
+  .page > :not(.print-view) { display: none !important; }
+  .print-view { display: block; }
+  .print-view * { color: #000 !important; background: none !important; box-shadow: none !important; }
+
+  .print-view h1 { font-size: 20pt; }
+  .print-view h2 { font-size: 13pt; margin: 0 0 2mm; padding-bottom: 1mm; border-bottom: 0.5pt solid #000; }
+  .print-view h3 { font-size: 10.5pt; margin: 0 0 1mm; }
+  .pv-head { margin-bottom: 4mm; }
+  .pv-head p { font-size: 11pt; }
+  .pv-section { margin-bottom: 4mm; }
+  h2, h3 { break-after: avoid; page-break-after: avoid; }
+  tr, li, .pv-block, .pv-highlights > div { break-inside: avoid; page-break-inside: avoid; }
+
+  /* final placement: the big one */
+  .print-view .places { columns: 3; column-gap: 8mm; display: block; }
+  .print-view .places li { font-size: 12pt; margin-bottom: 0.8mm; display: flex; gap: 3mm; }
+  .print-view .place { min-width: 12mm; }
+
+  .pv-ko { display: grid; grid-template-columns: 1fr 1fr; gap: 3mm 8mm; }
+  .pv-groups { display: grid; gap: 3mm; }
+  .pv-ko ul { list-style: none; margin: 0; padding: 0; }
+  .pv-ko li { margin-bottom: 0.2mm; }
+  .pv-muted { font-weight: 600; }
+
+  .print-view .table { font-size: 8.5pt; }
+  .print-view .table th, .print-view .table td { padding: 0.3mm 1.2mm; border-bottom: 0.3pt solid #000; }
+  .print-view .table-wrap { overflow: visible; }
+  .print-view .hint { font-size: inherit; }
+
+  .pv-highlights { margin: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 1mm 4mm; }
+  .pv-highlights dt { font-weight: 700; }
+  .pv-highlights dd { margin: 0; }
+}

@@ -224,3 +224,36 @@ h1[tabindex="-1"]:focus { outline: none; }
 .stats-fields { display: grid; gap: var(--sp-3); grid-template-columns: repeat(2, minmax(0, 1fr)); margin-bottom: var(--sp-3); }
 .stats-fields .input-num { width: 100%; }
 .field-error { color: var(--c-danger); font-size: var(--fs-sm); font-weight: 650; }
+.score-btn:disabled { cursor: default; }
+.score-btn:disabled:not([aria-pressed="true"]) { opacity: 0.45; }
+.score-btn:disabled:hover:not([aria-pressed="true"]) { background: var(--c-surface); }
+
+/* tables */
+.table-wrap { overflow-x: auto; }
+.table { width: 100%; border-collapse: collapse; }
+.table th, .table td { padding: var(--sp-2) var(--sp-3); text-align: right; white-space: nowrap; border-bottom: 1px solid var(--c-border); }
+.table thead th { font-size: var(--fs-sm); color: var(--c-text-muted); font-weight: 650; }
+.table .col-name { text-align: left; font-weight: 650; width: 100%; }
+.table td:first-child, .table th:first-child { text-align: left; }
+.row-out { color: var(--c-text-muted); }
+.places { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-2); }
+.places li { display: flex; gap: var(--sp-3); font-size: var(--fs-lg); }
+.place { font-weight: 800; min-width: 3.5em; }
+
+/* K.O. bracket */
+.bracket { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(240px, 1fr); gap: var(--sp-4); overflow-x: auto; padding-bottom: var(--sp-2); }
+.bracket-col { display: grid; grid-template-rows: auto 1fr; gap: var(--sp-3); }
+.bracket-title { font-size: var(--fs-lg); }
+.bracket-matches, .ko-grid { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-3); }
+.bracket-matches { align-content: space-around; }
+.ko-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+.ko-match { display: grid; gap: var(--sp-1); width: 100%; min-height: var(--touch); padding: var(--sp-3); text-align: left;
+  font: inherit; color: inherit; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--r-md); }
+.ko-click { cursor: pointer; transition: border-color var(--dur), background var(--dur); }
+.ko-click:hover { border-color: var(--c-border-strong); background: var(--c-surface-2); }
+.ko-running { border: 2px solid var(--c-live); background: var(--c-live-soft); }
+.ko-live { color: var(--c-live); }
+.ko-label { font-size: var(--fs-sm); color: var(--c-text-muted); }
+.ko-side { display: flex; justify-content: space-between; gap: var(--sp-3); }
+.ko-win { font-weight: 800; }
+.ko-score { font-weight: 800; }
