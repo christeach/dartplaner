@@ -234,7 +234,7 @@ export function pendingTies(t: Tournament): PendingTie[] {
   const { mode } = t.settings;
   if ((mode.kind !== 'groupsKo' && mode.kind !== 'roundRobin') || koStarted(t) || !groupsFinished(t)) return [];
   // groupsKo: every group rank decides a place, so every tie needs Stechen
-  const limit = mode.kind === 'roundRobin' ? (mode.finalTopTwo ? 3 : 1) : Infinity;
+  const limit = mode.kind === 'roundRobin' ? (mode.finalTopTwo ? 2 : 1) : Infinity;
   let filler: PendingTie | undefined;
   if (mode.kind === 'groupsKo' && mode.groups > 2) {
     const field = koField(t);
@@ -259,6 +259,13 @@ export function setTieOrder(t: Tournament, key: string, order: PlayerId[]): Tour
     fail('Die Reihenfolge muss genau die Spieler des Stechens enthalten.');
   }
   return settle({ ...t, tieOrder: { ...t.tieOrder, [key]: order } });
+}
+
+export function clearTieOrder(t: Tournament, key: string): Tournament {
+  if (koStarted(t)) fail('Die K.O.-Runde läuft bereits.');
+  if (!t.tieOrder[key]) fail('Kein entschiedenes Stechen mit diesem Schlüssel.');
+  const { [key]: _k, ...tieOrder } = t.tieOrder;
+  return settle({ ...t, tieOrder });
 }
 
 export function startKo(t: Tournament): Tournament {

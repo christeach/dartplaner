@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { isPlayable, resolveSlot } from './resolve';
 import {
   canEditResult, computePlacements, createTournament, editResult, editStats, groupStandings, pendingTies,
-  recordResult, setTieOrder, start, startKo, startMatch, withdrawPlayer,
+  clearTieOrder, recordResult, setTieOrder, start, startKo, startMatch, withdrawPlayer,
 } from './tournament';
 import type { Match, Mode, Result, Settings, Tournament } from './types';
 
@@ -183,6 +183,28 @@ describe('tournament lifecycle', () => {
     t = playAll(startKo(resolveTies(t)));
     expect(t.phase).toBe('done');
     expect(computePlacements(t).map((p) => p.playerId).sort()).toEqual(t.players.map((p) => p.id).sort());
+  });
+
+  it('round robin with final: a tie from place 3 on is shared, no Stechen', () => {
+    let t = start(createTournament(settings({ kind: 'roundRobin', finalTopTwo: true }), names(5), 7), tick());
+    t = playAll(t, cyclicBottom(t));
+    expect(pendingTies(t)).toEqual([]);
+    t = playAll(startKo(t));
+    expect(computePlacements(t).map((p) => (p.placeTo ? `${p.place}–${p.placeTo}` : `${p.place}`)))
+      .toEqual(['1', '2', '3–5', '3–5', '3–5']);
+  });
+
+  it('clearTieOrder reopens a decided Stechen until the K.O. starts', () => {
+    let t = start(createTournament(settings({ ...club, placementGames: false }), names(16), 7), tick());
+    t = playAll(t, cyclicBottom(t));
+    const [tie] = pendingTies(t);
+    t = setTieOrder(t, tie.key, tie.playerIds);
+    expect(t.phase).toBe('groups');
+    const cleared = clearTieOrder(t, tie.key);
+    expect(cleared.phase).toBe('tiebreak');
+    expect(pendingTies(cleared).map((x) => x.key)).toEqual([tie.key]);
+    expect(() => clearTieOrder(cleared, tie.key)).toThrow('Kein entschiedenes Stechen');
+    expect(() => clearTieOrder(startKo(t), tie.key)).toThrow('K.O.-Runde läuft bereits');
   });
 
   it('editResult keeps the existing stats when none are given', () => {
