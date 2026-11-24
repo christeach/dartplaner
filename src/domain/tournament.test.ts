@@ -157,4 +157,81 @@ describe('tournament lifecycle', () => {
     expect(places.map((p) => p.playerId).sort()).toEqual(t.players.map((p) => p.id).sort());
     expect(places[0].place).toBe(1);
   });
+
+  // within group g1 the last three players form a perfect cyclic tie, everyone else is strictly ordered by draw position
+  const cyclicBottom = (t: Tournament) => {
+    const trio = t.groups[0].playerIds.slice(-3);
+    const pos = (id: string) => t.groups.flatMap((g) => g.playerIds).indexOf(id);
+    return (m: Match): Result => {
+      const [a, b] = [(m.a as { id: string }).id, (m.b as { id: string }).id];
+      if (trio.includes(a) && trio.includes(b)) {
+        const aWins = trio[(trio.indexOf(a) + 1) % 3] === b;
+        return aWins ? { kind: 'legs', a: 3, b: 1 } : { kind: 'legs', a: 1, b: 3 };
+      }
+      return pos(a) < pos(b) ? { kind: 'legs', a: 3, b: 0 } : { kind: 'legs', a: 0, b: 3 };
+    };
+  };
+
+  it('club without placement games: a tie at ranks 6–8 needs Stechen', () => {
+    let t = start(createTournament(settings({ ...club, placementGames: false }), names(16), 7), tick());
+    t = playAll(t, cyclicBottom(t));
+    expect(t.phase).toBe('tiebreak');
+    expect(pendingTies(t).map((x) => x.label)).toEqual(['Stechen Liga A: Platz 6–8']);
+  });
+
+  it('multi-group: a tie below the cut needs Stechen; with the filler tie resolved it runs to done', () => {
+    let t = start(createTournament(settings({ kind: 'groupsKo', groups: 3, placementGames: true, thirdPlace: true }), names(18), 7), tick());
+    t = playAll(t, cyclicBottom(t));
+    expect(t.phase).toBe('tiebreak');
+    const ties = pendingTies(t);
+    expect(ties.map((x) => x.label)).toContain('Stechen Gruppe A: Platz 4–6');
+    expect(ties.some((x) => x.key.startsWith('fillers:'))).toBe(true);
+    expect(() => startKo(t)).toThrow();
+    t = playAll(startKo(resolveTies(t)));
+    expect(t.phase).toBe('done');
+    expect(computePlacements(t).map((p) => p.playerId).sort()).toEqual(t.players.map((p) => p.id).sort());
+  });
+
+  it('editResult keeps the existing stats when none are given', () => {
+    let t = start(createTournament(settings({ kind: 'roundRobin', finalTopTwo: false }), names(4), 7), tick());
+    const id = t.matches[0].id;
+    t = recordResult(t, id, { kind: 'legs', a: 3, b: 0 }, { a: { s180: 2 } }, tick());
+    t = editResult(t, id, { kind: 'legs', a: 0, b: 3 }, undefined, tick());
+    expect(t.matches.find((x) => x.id === id)!.stats).toEqual({ a: { s180: 2 } });
+  });
+
+  it('editStats rejects walkover matches', () => {
+    const t = start(createTournament(settings({ kind: 'singleKo', thirdPlace: true }), names(5), 7), tick());
+    const wo = t.matches.find((x) => x.result?.kind === 'walkover')!;
+    expect(() => editStats(t, wo.id, { a: { s180: 1 } })).toThrow('Kampflose');
+  });
+
+  it('round robin final needs 2 active players', () => {
+    let t = start(createTournament(settings({ kind: 'roundRobin', finalTopTwo: true }), names(3), 7), tick());
+    t = withdrawPlayer(withdrawPlayer(t, 'p1', tick()), 'p2', tick());
+    expect(() => startKo(t)).toThrow('mindestens 2 aktive Spieler');
+  });
+
+  it('editResult resets downstream walkovers transitively and recomputes them', () => {
+    let t = start(createTournament(settings({ kind: 'singleKo', thirdPlace: false }), names(8), 7), tick());
+    for (const id of ['ko-R1-2', 'ko-R1-3', 'ko-R1-4']) {
+      const m = t.matches.find((x) => x.id === id)!;
+      for (const s of [m.a, m.b]) t = withdrawPlayer(t, (s as { id: string }).id, tick());
+    }
+    t = recordResult(t, 'ko-R1-1', { kind: 'legs', a: 3, b: 0 }, undefined, tick());
+    const qf1 = t.matches.find((x) => x.id === 'ko-R1-1')!;
+    const champion = () => resolveSlot(t.matches, { kind: 'winnerOf', matchId: 'ko-R3-1' });
+    expect(t.phase).toBe('done');
+    expect(champion()).toBe(resolveSlot(t.matches, qf1.a));
+    expect(canEditResult(t, 'ko-R1-1')).toBe(true);
+    t = editResult(t, 'ko-R1-1', { kind: 'legs', a: 1, b: 3 }, undefined, tick());
+    expect(champion()).toBe(resolveSlot(t.matches, qf1.b));
+    expect(t.phase).toBe('done');
+  });
+
+  it('a K.O. result is locked once a dependent match is done with legs', () => {
+    const t = playAll(start(createTournament(settings({ kind: 'singleKo', thirdPlace: false }), names(4), 7), tick()));
+    expect(canEditResult(t, 'ko-R1-1')).toBe(false);
+    expect(canEditResult(t, 'ko-R2-1')).toBe(true);
+  });
 });

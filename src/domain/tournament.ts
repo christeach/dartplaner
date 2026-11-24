@@ -144,12 +144,11 @@ export function editResult(t: Tournament, matchId: string, result: Result, stats
   if (!canEditResult(t, matchId)) fail('Dieses Ergebnis kann nicht mehr geändert werden.');
   const m = getMatch(t, matchId);
   checkInput(m, result, stats);
-  const { stats: _s, ...rest } = m;
   const reset = new Set(downstream(t.matches, matchId).walkovers);
   const matches = t.matches.map((x) => {
-    if (x.id === matchId) return { ...rest, result, ...(stats ? { stats } : {}) };
+    if (x.id === matchId) return { ...m, result, ...(stats ? { stats } : {}) };
     if (!reset.has(x.id)) return x;
-    const { result: _r, finishedAt: _f, ...open } = x;
+    const { result: _r, finishedAt: _f, startedAt: _st, ...open } = x;
     return { ...open, status: 'open' as const };
   });
   return settle({ ...t, matches: autoAdvance(matches, withdrawnSet(t), now) });
@@ -158,6 +157,7 @@ export function editResult(t: Tournament, matchId: string, result: Result, stats
 export function editStats(t: Tournament, matchId: string, stats: Stats): Tournament {
   const m = getMatch(t, matchId);
   if (m.status !== 'done') fail('Highlights gibt es nur für beendete Spiele.');
+  if (m.result?.kind !== 'legs') fail('Kampflose Spiele haben keine Highlights.');
   const errors = [stats?.a, stats?.b].flatMap((s) => (s ? validateStats(s) : []));
   if (errors.length) fail(errors.join(' '));
   const { stats: _s, ...rest } = m;
@@ -229,17 +229,11 @@ function qualifyMulti(t: Tournament, field: 4 | 8 | 16) {
 export function pendingTies(t: Tournament): PendingTie[] {
   const { mode } = t.settings;
   if ((mode.kind !== 'groupsKo' && mode.kind !== 'roundRobin') || koStarted(t) || !groupsFinished(t)) return [];
-  const w = withdrawnSet(t);
-  const active = (g: Group) => g.playerIds.filter((id) => !w.has(id)).length;
-  let limit: number;
+  // groupsKo: every group rank decides a place, so every tie needs Stechen
+  const limit = mode.kind === 'roundRobin' ? (mode.finalTopTwo ? 3 : 1) : Infinity;
   let filler: PendingTie | undefined;
-  if (mode.kind === 'roundRobin') limit = mode.finalTopTwo ? 3 : 1;
-  else if (mode.groups === 2) {
-    const q = t.groups.every((g) => active(g) >= 6) ? 4 : 2;
-    limit = mode.placementGames ? Infinity : q + 1;
-  } else {
+  if (mode.kind === 'groupsKo' && mode.groups > 2) {
     const field = koField(t);
-    limit = field ? Math.floor(field / mode.groups) + 1 : 1;
     const key = field && qualifyMulti(t, field).fillerTieKey;
     if (key) filler = { key, playerIds: key.slice(key.indexOf(':') + 1).split(','), label: 'Stechen um die Auffüllplätze' };
   }
@@ -265,7 +259,8 @@ export function setTieOrder(t: Tournament, key: string, order: PlayerId[]): Tour
 
 export function startKo(t: Tournament): Tournament {
   const { mode, legs } = t.settings;
-  if (mode.kind !== 'groupsKo' && !(mode.kind === 'roundRobin' && mode.finalTopTwo)) throw new Error('Dieser Modus hat keine K.O.-Runde.');
+  if (mode.kind !== 'groupsKo' && mode.kind !== 'roundRobin') return fail('Dieser Modus hat keine K.O.-Runde.');
+  if (mode.kind === 'roundRobin' && !mode.finalTopTwo) fail('Dieser Modus hat keine K.O.-Runde.');
   if (koStarted(t)) fail('Die K.O.-Runde läuft bereits.');
   if (!groupsFinished(t)) fail('Es sind noch nicht alle Gruppenspiele beendet.');
   if (pendingTies(t).length) fail('Zuerst muss das Stechen entschieden werden.');
@@ -275,6 +270,7 @@ export function startKo(t: Tournament): Tournament {
   if (mode.kind === 'roundRobin') {
     const rows = groupStandings(t, t.groups[0]);
     const [first, second] = ranked(t.groups[0]);
+    if (!second) fail('Für das Finale werden mindestens 2 aktive Spieler benötigt.');
     ko = [{ id: 'rr-final', bracket: 'final', round: 1, order: 0, label: 'Finale', a: { kind: 'player', id: first },
       b: { kind: 'player', id: second }, legsToWin: legs.final, status: 'open', winnerPlace: 1, loserPlace: 2 }];
     fixedPlaces = placeEntries(rankBlocks(rows).slice(2), 3);
