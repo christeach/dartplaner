@@ -84,4 +84,27 @@ describe('buildClubKo', () => {
     expect(matches.map((m) => m.label).sort()).toEqual(['Finale', 'Halbfinale 1', 'Halbfinale 2', 'Spiel um Platz 3']);
     expect(fixedPlaces).toEqual([]);
   });
+
+  it('6 + 4 with placement games: lone players get consecutive places', () => {
+    const { matches, fixedPlaces } = buildClubKo(league('A', 6), league('B', 4), opts);
+    expect(pair(matches, 'Spiel um Platz 5')).toEqual(['A3', 'B3']);
+    expect(pair(matches, 'Spiel um Platz 7')).toEqual(['A4', 'B4']);
+    expect(fixedPlaces).toEqual([{ playerId: 'A5', place: 9 }, { playerId: 'A6', place: 10 }]);
+    const ps = places(matches, fixedPlaces);
+    expect(ps.map((p) => p.place).sort((a, b) => a - b)).toEqual(Array.from({ length: 10 }, (_, i) => i + 1));
+  });
+
+  it('6 + 4 without placement games: shared ranges, then consecutive lone places', () => {
+    const { fixedPlaces } = buildClubKo(league('A', 6), league('B', 4), { ...opts, placementGames: false });
+    expect(fixedPlaces).toEqual([
+      { playerId: 'A3', place: 5, placeTo: 6 }, { playerId: 'B3', place: 5, placeTo: 6 },
+      { playerId: 'A4', place: 7, placeTo: 8 }, { playerId: 'B4', place: 7, placeTo: 8 },
+      { playerId: 'A5', place: 9 }, { playerId: 'A6', place: 10 },
+    ]);
+  });
+
+  it('throws when a league has fewer than 2 players', () => {
+    expect(() => buildClubKo(['A1'], league('B', 3), opts)).toThrow('Liga A hat zu wenige Spieler für die K.O.-Runde');
+    expect(() => buildClubKo(league('A', 3), ['B1'], opts)).toThrow('Liga B hat zu wenige Spieler für die K.O.-Runde');
+  });
 });
